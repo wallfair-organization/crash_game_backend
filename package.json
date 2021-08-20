@@ -1,0 +1,28 @@
+{
+  "name": "wallfair_crash_game_backend",
+  "version": "0.0.1",
+  "description": "Backend implementation for the Wallfair.io crash game",
+  "main": "index.js",
+  "scripts": {
+    "server": "node index.js",
+    "client": "node client.js"
+  },
+  "keywords": [
+    "blockchain",
+    "casino",
+    "wallfair",
+    "crashgame",
+    "game",
+    "javascript",
+    "nodejs",
+    "erc20"
+  ],
+  "author": "Wallfair.io",
+  "license": "AGPL-3.0-or-later",
+  "dependencies": {
+    "agenda": "^4.2.1",
+    "dotenv": "^10.0.0",
+    "express": "^4.17.1",
+    "redis": "^3.1.2"
+  }
+}
