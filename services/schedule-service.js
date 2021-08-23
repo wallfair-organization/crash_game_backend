@@ -7,7 +7,7 @@ const GAME_INTERVAL_IN_SECONDS = process.env.GAME_INTERVAL_IN_SECONDS || 5;
 const GAME_NAME = process.env.GAME_NAME || "ROSI";
 
 // redis publisher used to notify others of updates
-var pubClient;
+var redis;
 
 // wallet service for wallet/blockchain operations
 const wallet = require("./wallet-service");
@@ -49,10 +49,15 @@ const wallet = require("./wallet-service");
     });
 
     // notify others that game started
-    pubClient.publish(GAME_NAME, JSON.stringify({
+    redis.publish(GAME_NAME, JSON.stringify({
         action: "GAME_START",
         gameId: job.attrs._id
     }));
+
+    // change redis state of the game
+    redis.hmset([GAME_NAME, 
+        "state", "STARTED", 
+        "timeStarted", new Date().toISOString()]);
 });
 
 /**
@@ -80,16 +85,22 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
     await wallet.distributeRewards(gameId, crashFactor);
 
     // schedules the next game
-    agenda.schedule(`in ${GAME_INTERVAL_IN_SECONDS} seconds`, "crashgame_start", {
+    let startJob = await agenda.schedule(`in ${GAME_INTERVAL_IN_SECONDS} seconds`, "crashgame_start", {
         createdAt: new Date()
     });
+    let nextGameAt = startJob.attrs.nextRunAt;
 
     // notify others that game ended
-    pubClient.publish(GAME_NAME, JSON.stringify({
+    redis.publish(GAME_NAME, JSON.stringify({
         action: "GAME_END",
         crashFactor,
         gameId
     }));
+
+    // change redis state of the game
+    redis.hmset([GAME_NAME, 
+        "state", "ENDED", 
+        "nextGameAt", nextGameAt]);
 });
 
 /**
@@ -110,8 +121,8 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
 });
 
 module.exports = {
-    init: async (redisPubClient) => {
-        pubClient = redisPubClient;
+    init: async (_redis) => {
+        redis = _redis;
 
         // start the agenda engine
         await agenda.start();
@@ -132,5 +143,7 @@ module.exports = {
 
     stop: async () => {
         await agenda.stop();
-    }
+    },
+
+    agenda
 }

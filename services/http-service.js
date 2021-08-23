@@ -8,8 +8,14 @@ const ExtractJWT = require('passport-jwt').ExtractJwt;
 
 const wallfair = require("@wallfair.io/wallfair-commons");
 
+const { agenda } = require("./schedule-service");
+
+// define constants that can be overriden in .env
+const GAME_INTERVAL_IN_SECONDS = process.env.GAME_INTERVAL_IN_SECONDS || 5;
+const GAME_NAME = process.env.GAME_NAME || "ROSI";
+
 // redis publisher used to notify others of updates
-var pubClient;
+var redis;
 
 // wallet service for wallet/blockchain operations
 const wallet = require("./wallet-service");
@@ -56,12 +62,21 @@ server.get('/', (req, res) => {
 /**
  * Route: Get current game information
  */
-server.get('/api/current', (req, res) => {
-    return {
-        nextGameAt: null, // return time of next game
-        trades: [], // return open trades
-        pastGames: [] // return previuos crashes
-    }
+server.get('/api/current', async (req, res) => {
+    // retrieve the last 10 jobs and extract crashFactor from them
+    let lastCrashes = await agenda.jobs({name: "crashgame_end"}, {lastFinishedAt: -1}, 10, 0);  
+    lastCrashes = lastCrashes.map(lc => lc.attrs.data.crashFactor);
+
+    // read info from redis and send response when the info is ready
+    redis.hgetall(GAME_NAME, (err, obj) => {
+        res.status(200).send({
+            timeStarted: obj.timeStarted,
+            nextGameAt: obj.nextGameAt,
+            state: obj.state,
+            currentBets: ["TODO"],
+            lastCrashes: lastCrashes
+        });
+    });
 });
 
 /**
@@ -85,8 +100,8 @@ server.delete('/api/trade', passport.authenticate('jwt', { session: false }), (r
 // Export methods to start/stop app server
 var appServer;
 module.exports = {
-    init: (redisPubClient) => {
-        pubClient = redisPubClient;
+    init: (_redis) => {
+        redis = _redis;
 
         // create http server and start it
         let httpServer  = http.createServer(server);
