@@ -17,4 +17,12 @@ subClient.on("message", (channel, message) => {
 });
 
 subClient.subscribe(GAME_NAME);
+console.log("Subscribing to topic ", GAME_NAME)
 
+subClient.subscribe("message");
+console.log("Subscribing to topic ", "message")
+
+for (let i = 2; i < process.argv.length; i++) {
+    console.log("Subscribing to topic ", process.argv[i])
+        subClient.subscribe(process.argv[i]);
+}

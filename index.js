@@ -8,6 +8,9 @@ const scheduler = require("./services/schedule-service");
 // create application server
 const appServer = require("./services/http-service");
 
+// import wallet service
+const wallet = require("./services/wallet-service");
+
 // init commons and mongoose
 const mongoose = require('mongoose');
 const wallfair = require('@wallfair.io/wallfair-commons');
@@ -33,6 +36,16 @@ const pubClient = createClient({
     // init wallfair commons
     wallfair.init(mongoose);
 
+    // load casino balance
+    let casinoBalance = await wallet.getCasinoBalance();
+    console.log(new Date(), `Casino balance loaded with ${casinoBalance} EVNT`);
+    
+    // mint initial liquidity if casino balance is 0. 
+    // (Balance should never reach 0 again)
+    if (casinoBalance == 0) {
+        await wallet.mintInitialBalance();
+    }
+
     // init http server
     appServer.init(pubClient);
 
@@ -48,8 +61,8 @@ const pubClient = createClient({
 async function graceful() {
     console.log(new Date(), "Quitting gracefully...");
 
-    appServer.stop();
     await scheduler.stop();
+    appServer.stop();
     process.exit(0);
 }
 process.on("SIGTERM", graceful);

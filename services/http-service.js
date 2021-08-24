@@ -11,8 +11,8 @@ const wallfair = require("@wallfair.io/wallfair-commons");
 const { agenda } = require("./schedule-service");
 
 // define constants that can be overriden in .env
-const GAME_INTERVAL_IN_SECONDS = process.env.GAME_INTERVAL_IN_SECONDS || 5;
 const GAME_NAME = process.env.GAME_NAME || "ROSI";
+const MAX_AMOUNT_PER_TRADE = process.env.MAX_AMOUNT_PER_TRADE || 100;
 
 // redis publisher used to notify others of updates
 var redis;
@@ -29,7 +29,6 @@ passport.use('jwt',
             jwtFromRequest: ExtractJWT.fromAuthHeaderAsBearerToken()
         },
         async (token, done) => {
-            console.log("request with token", token);
             try {
                 let user = await wallfair.models.User.findById(token.userId).exec();
                 return done(null, user);
@@ -41,7 +40,7 @@ passport.use('jwt',
 );
 
 // Initialise server using express
-const server      = express();
+const server = express();
 
 // Giving server ability to parse json
 server.use(express.json());
@@ -83,9 +82,44 @@ server.get('/api/current', async (req, res) => {
  * Route: Place a trade
  * User must have enough balance to place this trade
  */
-server.post('/api/trade', passport.authenticate('jwt', { session: false }), (req, res) => {
-    // verify balance
-    // create trade object
+server.post('/api/trade', passport.authenticate('jwt', { session: false }), async (req, res) => {
+     // TODO validate inputs properly
+    let {amount, crashFactor} = req.body;
+
+    // validate amount
+    if (amount > MAX_AMOUNT_PER_TRADE) {
+        res.status(422).send(`Amount cannot exceed ${MAX_AMOUNT_PER_TRADE}`);
+        return;
+    }
+
+    // verify that user has enough balance to perform trade
+    let balance = await wallet.getBalance(req.user._id.toString());
+    if (balance <= amount) {
+        res.status(422).send(`User does not have enough balance (${balance}) to perform this operation (${amount})`);
+        return;
+    }
+
+    try {
+        // decrease wallet amount
+        await wallet.placeTrade(req.user._id, amount, crashFactor);
+
+        // notify users
+        redis.publish('message', JSON.stringify({
+            to: GAME_NAME,
+            event: "CASINO_TRADE",
+            data: {
+                amount,
+                crashFactor,
+                username: req.user.username
+            }
+        }));
+
+        res.status(200).json({});
+    } catch (err) {
+        console.log(err);
+        res.status(500).send(err);
+    }
+
     // notify via redis
 });
 

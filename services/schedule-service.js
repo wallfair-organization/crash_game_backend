@@ -12,6 +12,8 @@ var redis;
 // wallet service for wallet/blockchain operations
 const wallet = require("./wallet-service");
 
+const ONE = 10000n;
+
 /**
  * Method for starting the game.
  * This method decides the crash factor, and schedules the end of the game.
@@ -32,7 +34,7 @@ const wallet = require("./wallet-service");
 
     // decides on a crash factor
     // TODO: choose better method
-    let crashFactor = Math.random() * 10;
+    let crashFactor = (Math.random() * 15) + 1;
     let nextGameTime = Math.ceil(crashFactor);
 
     // log the chosen parameters for debugging purposes
@@ -49,9 +51,13 @@ const wallet = require("./wallet-service");
     });
 
     // notify others that game started
-    redis.publish(GAME_NAME, JSON.stringify({
-        action: "GAME_START",
-        gameId: job.attrs._id
+    redis.publish('message', JSON.stringify({
+        to: GAME_NAME,
+        event: "CASINO_START",
+        data: {
+            gameId: job.attrs._id,
+            gameName: GAME_NAME
+        }
     }));
 
     // change redis state of the game
@@ -80,9 +86,7 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
     console.log(new Date(), `Game ${gameId} crashed now. Next game starts in ${GAME_INTERVAL_IN_SECONDS} seconds`);
 
     // end game and update balanes
-    // TODO: is it needed to wait for this operation to end? 
-    // i am guessing not. Let the system handle this in parallel
-    await wallet.distributeRewards(gameId, crashFactor);
+    let winners = await wallet.distributeRewards(gameId, crashFactor);
 
     // schedules the next game
     let startJob = await agenda.schedule(`in ${GAME_INTERVAL_IN_SECONDS} seconds`, "crashgame_start", {
@@ -91,29 +95,52 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
     let nextGameAt = startJob.attrs.nextRunAt;
 
     // notify others that game ended
-    redis.publish(GAME_NAME, JSON.stringify({
-        action: "GAME_END",
-        crashFactor,
-        gameId
+    redis.publish('message', JSON.stringify({
+        to: GAME_NAME,
+        event: "CASINO_END",
+        data: {
+            crashFactor,
+            gameId,
+            gameName: GAME_NAME
+        }
     }));
 
     // change redis state of the game
     redis.hmset([GAME_NAME, 
         "state", "ENDED", 
         "nextGameAt", nextGameAt]);
+
+
+    // notifies about wins
+    winners.forEach((winner) => {
+        let reward = Number(winner.reward) / Number(ONE);
+        let stakedAmount = parseInt(winner.stakedamount) / Number(ONE);
+        
+        redis.publish('message', JSON.stringify({
+            to: winner.userid,
+            event: "CASINO_REWARD",
+            data: {
+                crashFactor,
+                gameId,
+                gameName: GAME_NAME,
+                stakedAmount,
+                reward
+            }
+        }));
+    });
 });
 
 /**
  * This function will capture any error and re-schedule the job.
  * For now, jobs are being re-scheduled for 2 seconds after failure.
- * TODO: Stop at a certain failCount instead of keep trying forever?
+ * TODO: Decision: Stop at a certain failCount instead of keep trying forever?
  */
- agenda.on('fail', async (err, job) => {
+ agenda.on('!fail', async (err, job) => {
     // log error on console with reason
-    console.log(new Date(), "FAILURE DETECTED.", err.message);
+    console.log(new Date(), "FAILURE DETECTED.", err);
 
     // try again in 2 seconds
-    job.schedule("in 2 seconds");
+    job.schedule("in 5 seconds");
     await job.save();
 
     // log that recovery was successfully scheduled
@@ -129,8 +156,7 @@ module.exports = {
 
         // check if there are jobs created or if this is the first run ever
         const jobs = await agenda.jobs({}, {"data.createdAt": -1}, 1, 0);
-        console.log(JSON.stringify(jobs))
-        
+
         // create first job ever
         if (jobs.length == 0) {
             agenda.schedule(`in ${GAME_INTERVAL_IN_SECONDS} seconds`, "crashgame_start", {
@@ -138,6 +164,10 @@ module.exports = {
             });
 
             console.log(new Date(), "First job scheduled");
+        } else if (jobs[0].attrs.failedAt) {
+            console.log(new Date(), "Last job appears to need recovery from failure. Attemping it now.")
+            jobs[0].schedule("in 2 seconds");
+            await jobs[0].save();
         }
     },
 
