@@ -77,6 +77,20 @@ RESPONSE:
 }
 ```
 
+### User places bet
+
+```json
+{
+    to: GAME_NAME,
+    event: "CASINO_TRADE",
+    data: {
+        amount: "Amount of tokens staked by user",
+        crashFactor: "Crash factor guess by user",
+        username: "Username of the user"
+    }
+}
+```
+
 ### User receives reward
 
 ```json
