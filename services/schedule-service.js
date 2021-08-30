@@ -139,16 +139,16 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
  * For now, jobs are being re-scheduled for 2 seconds after failure.
  * TODO: Decision: Stop at a certain failCount instead of keep trying forever?
  */
- agenda.on('!fail', async (err, job) => {
+ agenda.on('fail', async (err, job) => {
     // log error on console with reason
     console.log(new Date(), "FAILURE DETECTED.", err);
 
     // try again in 2 seconds
-    job.schedule("in 5 seconds");
-    await job.save();
+    //job.schedule("in 5 seconds");
+    //await job.save();
 
     // log that recovery was successfully scheduled
-    console.log(new Date(), "Recovery for job will be attempted now.")
+    //console.log(new Date(), "Recovery for job will be attempted now.")
 });
 
 module.exports = {
