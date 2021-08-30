@@ -15,23 +15,81 @@ The main functions are as follows:
  - Handle failures and job retries
  - Handle concurrency with locks 
 
-## Notifications
+## API
 
-Game start:
+### Obtain current info
 
-```json
+```
+REQUEST:
+GET/api/current
+
+RESPONSE:
+200 OK
 {
-    "action": "GAME_START,
-    "gameId": "",
+    timeStarted: Date,
+    nextGameAt: Date,
+    state: "STARTED|ENDED",
+    currentBets: [],
+    lastCrashes: [Number]
 }
 ```
 
-Game end:
+### Place a trade
+
+```
+REQUEST:
+POST /api/trade
+{
+    "amount": 13,
+    "crashFactor": 1.1276
+}
+
+RESPONSE:
+200 OK
+```
+
+## Notifications
+
+### Game starts
+
 ```json
 {
-    "action": "GAME_END,
-    "gameId": "",
-    "crashFactor": 1.234
+    to: GAME_NAME,
+    event: "CASINO_START",
+    data: {
+        gameId: "Id of the next round",
+        gameName: "Name of the game that is starting"
+    }
+}
+```
+
+### Game ends
+
+```json
+{
+    to: GAME_NAME,
+    event: "CASINO_END",
+    data: {
+        crashFactor: "Final crash factor decided",
+        gameId: "Id of the round that has just ended",
+        gameName: "Name of the game that is ending"
+    }
+}
+```
+
+### User receives reward
+
+```json
+{
+    to: winner.userid,
+    event: "CASINO_REWARD",
+    data: {
+        crashFactor: "Crash factor decided by player",
+        gameId: "Id of the game where bet was placed",
+        gameName: "Name of the game",
+        stakedAmount: "Original amount staked by user",
+        reward: "Final reward won by user"
+    }
 }
 ```
 
