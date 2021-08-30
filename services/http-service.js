@@ -146,6 +146,8 @@ module.exports = {
     },
 
     stop: () => {
-        appServer.close();
+        if (appServer) {
+            appServer.close();
+        }
     }
 }

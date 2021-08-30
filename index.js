@@ -34,7 +34,7 @@ const pubClient = createClient({
     });
 
     // init wallfair commons
-    wallfair.init(mongoose);
+    wallfair.initModels(mongoose);
 
     // load casino balance
     let casinoBalance = await wallet.getCasinoBalance();

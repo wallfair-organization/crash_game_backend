@@ -5,6 +5,11 @@ const agenda = new Agenda({ db: { address: process.env.DB_CONNECTION } });
 // define constants that can be overriden in .env
 const GAME_INTERVAL_IN_SECONDS = process.env.GAME_INTERVAL_IN_SECONDS || 5;
 const GAME_NAME = process.env.GAME_NAME || "ROSI";
+const GAUSSIAN_MEAN = parseFloat(process.env.GAUSSIAN_MEAN || 0.0);
+const GAUSSIAN_STDEV = parseFloat(process.env.GAUSSIAN_STDEV || 0.1);
+
+// import gaussian function
+const gaussian = require("@wallfair.io/wallfair-commons").utils.getGaussian(GAUSSIAN_MEAN, GAUSSIAN_STDEV);
 
 // redis publisher used to notify others of updates
 var redis;
@@ -33,8 +38,7 @@ const ONE = 10000n;
     console.log(new Date(), `Next game is starting with an id of ${gameId}`);
 
     // decides on a crash factor
-    // TODO: choose better method
-    let crashFactor = (Math.random() * 15) + 1;
+    let crashFactor = gaussian();
     let nextGameTime = Math.ceil(crashFactor);
 
     // log the chosen parameters for debugging purposes
