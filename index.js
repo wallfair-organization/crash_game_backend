@@ -38,7 +38,7 @@ const pubClient = createClient({
 
     // load casino balance
     let casinoBalance = await wallet.getCasinoBalance();
-    console.log(new Date(), `Casino balance loaded with ${casinoBalance} EVNT`);
+    console.log(new Date(), `Casino balance loaded with ${casinoBalance} WFAIR`);
     
     // mint initial liquidity if casino balance is 0. 
     // (Balance should never reach 0 again)

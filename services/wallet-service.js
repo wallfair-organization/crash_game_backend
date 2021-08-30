@@ -6,19 +6,19 @@ const { CasinoTradeContract, Erc20 } = require('@wallfair.io/smart_contract_mock
 const CASINO_WALLET_ADDR = process.env.WALLET_ADDR || "CASINO";
 const WALLET_INITIAL_LIQUIDITY_TO_MINT = 1000000n;
 
-const EVNT = new Erc20('EVNT');
+const WFAIR = new Erc20('WFAIR');
 const casinoContract = new CasinoTradeContract(CASINO_WALLET_ADDR);
 
 module.exports = {
     getBalance: async (walletAddr) => {
-        return (await EVNT.balanceOf(walletAddr)) / EVNT.ONE;
+        return (await WFAIR.balanceOf(walletAddr)) / WFAIR.ONE;
     },
 
     placeTrade: async (userId, amount, crashFactor) => {
-        await casinoContract.placeTrade(userId.toString(), BigInt(amount) * EVNT.ONE, crashFactor);
+        await casinoContract.placeTrade(userId.toString(), BigInt(amount) * WFAIR.ONE, crashFactor);
 
         // store an open trade and leave it open for the next game to grab
-        console.log(new Date(), `User ${userId} placed traded of ${amount} EVNT on a crash factor of ${crashFactor}`);
+        console.log(new Date(), `User ${userId} placed traded of ${amount} WFAIR on a crash factor of ${crashFactor}`);
     },
 
     cancelTrade: async (userId) => {
@@ -47,6 +47,6 @@ module.exports = {
     },
 
     mintInitialBalance: async () => {
-        await EVNT.mint(CASINO_WALLET_ADDR, WALLET_INITIAL_LIQUIDITY_TO_MINT * EVNT.ONE);
+        await WFAIR.mint(CASINO_WALLET_ADDR, WALLET_INITIAL_LIQUIDITY_TO_MINT * WFAIR.ONE);
     }
 }
