@@ -29,6 +29,6 @@ jobs:
       - name: Login to Digital Ocean docker registry
         run: doctl registry login
       - name: Build the docker image
-        run: docker build . -t registry.digitalocean.com/wallfair/backend:${{ github.event.inputs.version }}
+        run: docker build . -t registry.digitalocean.com/wallfair/crash-game-backend:${{ github.event.inputs.version }}
       - name: Publish the docker image to Digital Ocean
-        run: docker push registry.digitalocean.com/wallfair/backend:${{ github.event.inputs.version }}
+        run: docker push registry.digitalocean.com/wallfair/crash-game-backend:${{ github.event.inputs.version }}
