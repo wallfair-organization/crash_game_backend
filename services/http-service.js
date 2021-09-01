@@ -2,6 +2,7 @@
 const passport = require('passport');
 const express = require('express');
 const http    = require('http');
+const cors    = require('cors');
 
 const JWTstrategy = require('passport-jwt').Strategy;
 const ExtractJWT = require('passport-jwt').ExtractJwt;
@@ -41,6 +42,9 @@ passport.use('jwt',
 
 // Initialise server using express
 const server = express();
+
+// TODO restrict access to fe app host
+server.use(cors());
 
 // Giving server ability to parse json
 server.use(express.json());
