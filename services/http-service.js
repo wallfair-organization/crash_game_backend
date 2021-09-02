@@ -3,6 +3,7 @@ const passport = require('passport');
 const express = require('express');
 const http    = require('http');
 const cors    = require('cors');
+const { rdsGet } = require('../utils/redis');
 
 const JWTstrategy = require('passport-jwt').Strategy;
 const ExtractJWT = require('passport-jwt').ExtractJwt;
@@ -67,18 +68,19 @@ server.get('/', (req, res) => {
  */
 server.get('/api/current', async (req, res) => {
     // retrieve the last 10 jobs and extract crashFactor from them
-    let lastCrashes = await agenda.jobs({name: "crashgame_end"}, {lastFinishedAt: -1}, 10, 0);  
-    lastCrashes = lastCrashes.map(lc => lc.attrs.data.crashFactor);
+    const lastGames = await agenda.jobs({name: "crashgame_end"}, {lastFinishedAt: -1}, 10, 0);  
+    const lastCrashes = lastGames.map(lc => lc.attrs.data.crashFactor);
 
-    // read info from redis and send response when the info is ready
-    redis.hgetall(GAME_NAME, (err, obj) => {
-        res.status(200).send({
-            timeStarted: obj.timeStarted,
-            nextGameAt: obj.nextGameAt,
-            state: obj.state,
-            currentBets: ["TODO"],
-            lastCrashes: lastCrashes
-        });
+    // read info from redis
+    const { timeStarted, nextGameAt, state, currentBets, upcomingBets } = await rdsGet(redis, GAME_NAME);
+
+    res.status(200).send({
+        timeStarted,
+        nextGameAt,
+        state,
+        currentBets: JSON.parse(currentBets),
+        upcomingBets: JSON.parse(upcomingBets),
+        lastCrashes,
     });
 });
 
@@ -91,7 +93,7 @@ server.post('/api/trade', passport.authenticate('jwt', { session: false }), asyn
     let {amount, crashFactor} = req.body;
 
     // validate amount
-    if (amount > MAX_AMOUNT_PER_TRADE) {
+    if (+amount > MAX_AMOUNT_PER_TRADE) {
         res.status(422).send(`Amount cannot exceed ${MAX_AMOUNT_PER_TRADE}`);
         return;
     }
@@ -118,13 +120,32 @@ server.post('/api/trade', passport.authenticate('jwt', { session: false }), asyn
             }
         }));
 
+        const game = await rdsGet(redis, GAME_NAME);
+        
+        // determine if bet is in the current or next game
+        const betKey = game.state === 'STARTED' ? 'upcomingBets' : 'currentBets';
+
+        // initalize current or upcoming bets if empty
+        const existingBets = !!game[betKey] ? JSON.parse(game[betKey]) : [];
+
+        // push new bet to existing bets
+        const bets = [
+            ...existingBets,
+            {
+                amount,
+                crashFactor,
+                username: req.user.username
+            }
+        ];
+
+        // update storage
+        redis.hmset([GAME_NAME, betKey, JSON.stringify(bets)]);
+
         res.status(200).json({});
     } catch (err) {
         console.log(err);
         res.status(500).send(err);
     }
-
-    // notify via redis
 });
 
 /**
