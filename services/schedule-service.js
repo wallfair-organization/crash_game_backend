@@ -24,21 +24,22 @@ const ONE = 10000n;
  * This method decides the crash factor, and schedules the end of the game.
  */
  agenda.define("crashgame_start", { lockLifetime: 10000 }, async (job) => {
-    /*if (Math.random() > 0.5) {
+    /*if (Math.random() > 0.1) {
         console.log(new Date(), "crashgame_start will fail on purpose!");
 
-        // 50% chance if failure
+        // 10% chance if failure
         throw new Error("FAIL!")
     }*/
 
     // ensure only one game is starting from the previous game
     let {prevGame} = job.attrs.data;
-    
-    const jobs = await agenda.jobs({"data.prevGame": prevGame}, {"data.createdAt": 1}, 1, 0);
-    if (jobs[0]._id != job._id) {
+    const jobs = await agenda.jobs({"name": "crashgame_start", "data.prevGame": prevGame}, {"data.createdAt": 1}, 1, 0);
+    console.log(new Date(), "crashgame_start", jobs.length);
+
+    if (jobs[0].attrs._id.toString() != job.attrs._id.toString()) {
+        console.log(new Date(), "crashgame_start", `Job ${job.attrs._id.toString()} will skip execution`, jobs[0].attrs._id.toString());
         return; // does nothing in this case
     }
-
 
     // use the id of this job as gameId
     let gameId = job.attrs._id;
@@ -94,6 +95,15 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
 
     // extract needed information from the job
     let {crashFactor, gameId} = job.attrs.data;
+
+    // ensure the game ends only once
+    const jobs = await agenda.jobs({"name": "crashgame_end", "data.gameId": gameId}, {"data.createdAt": 1}, 1, 0);
+    console.log(new Date(), "crashgame_end", jobs.length);
+
+    if (jobs[0].attrs._id.toString() != job.attrs._id.toString()) {
+        console.log(new Date(), "crashgame_end", `Job ${job.attrs._id.toString()} will skip execution`, jobs[0].attrs._id.toString());
+        return; // does nothing in this case
+    }
     
     // log start of next game for debugging purposes
     console.log(new Date(), `Game ${gameId} crashed now. Next game starts in ${GAME_INTERVAL_IN_SECONDS} seconds`);
@@ -150,14 +160,14 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
  */
  agenda.on('fail', async (err, job) => {
     // log error on console with reason
-    console.log(new Date(), "FAILURE DETECTED.", err);
+    console.log(new Date(), `Failure detected for job ${job.attrs._id}.`, err);
 
     // try again in 2 seconds
     job.schedule("in 2 seconds");
     await job.save();
 
     // log that recovery was successfully scheduled
-    //console.log(new Date(), "Recovery for job will be attempted now.")
+    console.log(new Date(), `Recovery for job ${job.attrs._id} will be attempted now.`)
 });
 
 module.exports = {
