@@ -28,18 +28,11 @@ const pubClient = createClient({
  */
 (async function () {
     let mongoURL = process.env.DB_CONNECTION;
-    if(process.env.ENVIRONMENT === 'STAGING') {
-        mongoURL = mongoURL.replace('admin?authSource=admin', 'wallfair?authSource=admin');
-        mongoURL += '&replicaSet=wallfair&tls=true&tlsCAFile=/usr/src/app/ssl/staging.crt';
-    } else if(process.env.ENVIRONMENT === 'PRODUCTIVE') {
-        mongoURL = mongoURL.replace('admin?authSource=admin', 'wallfair?authSource=admin');
-        mongoURL += '&replicaSet=wallfair&tls=true&tlsCAFile=/usr/src/app/ssl/productive.crt';
-    }
 
     // start mongoose
     await mongoose.connect(mongoURL, {
         useUnifiedTopology: true,
-        useNewUrlParser:    true,
+        useNewUrlParser:    true
     });
 
     // init wallfair commons
