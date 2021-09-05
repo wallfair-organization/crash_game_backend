@@ -31,6 +31,15 @@ const ONE = 10000n;
         throw new Error("FAIL!")
     }*/
 
+    // ensure only one game is starting from the previous game
+    let {prevGame} = job.attrs.data;
+    
+    const jobs = await agenda.jobs({"data.prevGame": prevGame}, {"data.createdAt": 1}, 1, 0);
+    if (jobs[0]._id != job._id) {
+        return; // does nothing in this case
+    }
+
+
     // use the id of this job as gameId
     let gameId = job.attrs._id;
 
@@ -92,12 +101,6 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
     // end game and update balanes
     let winners = await wallet.distributeRewards(gameId, crashFactor);
 
-    // schedules the next game
-    let startJob = await agenda.schedule(`in ${GAME_INTERVAL_IN_SECONDS} seconds`, "crashgame_start", {
-        createdAt: new Date()
-    });
-    let nextGameAt = startJob.attrs.nextRunAt;
-
     // notify others that game ended
     redis.publish('message', JSON.stringify({
         to: GAME_NAME,
@@ -108,12 +111,6 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
             gameName: GAME_NAME
         }
     }));
-
-    // change redis state of the game
-    redis.hmset([GAME_NAME, 
-        "state", "ENDED", 
-        "nextGameAt", nextGameAt]);
-
 
     // notifies about wins
     winners.forEach((winner) => {
@@ -132,6 +129,18 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
             }
         }));
     });
+
+    // schedules the next game
+    let startJob = await agenda.schedule(`in ${GAME_INTERVAL_IN_SECONDS} seconds`, "crashgame_start", {
+        createdAt: new Date(),
+        prevGame: gameId
+    });
+    let nextGameAt = startJob.attrs.nextRunAt;
+
+    // change redis state of the game
+    redis.hmset([GAME_NAME, 
+        "state", "ENDED", 
+        "nextGameAt", nextGameAt]);
 });
 
 /**
@@ -144,8 +153,8 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
     console.log(new Date(), "FAILURE DETECTED.", err);
 
     // try again in 2 seconds
-    //job.schedule("in 5 seconds");
-    //await job.save();
+    job.schedule("in 2 seconds");
+    await job.save();
 
     // log that recovery was successfully scheduled
     //console.log(new Date(), "Recovery for job will be attempted now.")
@@ -164,7 +173,8 @@ module.exports = {
         // create first job ever
         if (jobs.length == 0) {
             agenda.schedule(`in ${GAME_INTERVAL_IN_SECONDS} seconds`, "crashgame_start", {
-                createdAt: new Date()
+                createdAt: new Date(),
+                prevGame: "root"
             });
 
             console.log(new Date(), "First job scheduled");
