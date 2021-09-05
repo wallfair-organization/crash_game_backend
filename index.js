@@ -29,13 +29,10 @@ const pubClient = createClient({
 (async function () {
     let mongoURL = process.env.DB_CONNECTION;
 
-    const sslCA = process.env.MONGO_CA_CERT.replaceAll(' ', '\n').replace('BEGIN\n', 'BEGIN ').replace('END\n', 'END ');
-
     // start mongoose
     await mongoose.connect(mongoURL, {
         useUnifiedTopology: true,
-        useNewUrlParser:    true,
-        sslCA
+        useNewUrlParser:    true
     });
 
     // init wallfair commons
