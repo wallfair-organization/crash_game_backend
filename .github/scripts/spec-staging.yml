@@ -10,16 +10,13 @@ databases:
   production: true
   version: "6"
 - cluster_name: prod-db
+  engine: PG
   db_name: testdb
   db_user: doadmin
-  engine: PG
   name: prod-db
   production: true
   version: "13"
 envs:
-- key: DB_CONNECTION
-  scope: RUN_AND_BUILD_TIME
-  value: ${wallfair.DATABASE_URL}
 - key: REDIS_CONNECTION
   scope: RUN_AND_BUILD_TIME
   value: ${redis.DATABASE_URL}
@@ -54,6 +51,9 @@ services:
   - key: POSTGRES_PORT
     scope: RUN_AND_BUILD_TIME
     value: "25060"
+  - key: DB_CONNECTION
+    scope: RUN_AND_BUILD_TIME
+    value: $MONGO_DB_URL
   http_port: 80
   image:
     registry_type: DOCR
