@@ -2,6 +2,8 @@
 const Agenda = require("agenda");
 const agenda = new Agenda({ db: { address: process.env.DB_CONNECTION } });
 
+const { rdsGet } = require('../utils/redis');
+
 // define constants that can be overriden in .env
 const GAME_INTERVAL_IN_SECONDS = process.env.GAME_INTERVAL_IN_SECONDS || 5;
 const GAME_NAME = process.env.GAME_NAME || "ROSI";
@@ -121,6 +123,18 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
             gameName: GAME_NAME
         }
     }));
+
+    // extract next game bets
+    const { upcomingBets } = await rdsGet(redis, GAME_NAME);
+
+    // change redis state of the game
+    redis.hset([GAME_NAME, 
+        "state", "ENDED", 
+        "nextGameAt", nextGameAt,
+        "currentBets", upcomingBets,
+        'upcomingBets', '[]'
+    ], () => {});
+
 
     // notifies about wins
     winners.forEach((winner) => {
