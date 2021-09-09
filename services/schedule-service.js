@@ -127,15 +127,6 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
     // extract next game bets
     const { upcomingBets } = await rdsGet(redis, GAME_NAME);
 
-    // change redis state of the game
-    redis.hset([GAME_NAME, 
-        "state", "ENDED", 
-        "nextGameAt", nextGameAt,
-        "currentBets", upcomingBets,
-        'upcomingBets', '[]'
-    ], () => {});
-
-
     // notifies about wins
     winners.forEach((winner) => {
         let reward = Number(winner.reward) / Number(ONE);
@@ -162,9 +153,12 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
     let nextGameAt = startJob.attrs.nextRunAt;
 
     // change redis state of the game
-    redis.hmset([GAME_NAME, 
+    redis.hset([GAME_NAME, 
         "state", "ENDED", 
-        "nextGameAt", nextGameAt]);
+        "nextGameAt", nextGameAt,
+        "currentBets", upcomingBets,
+        'upcomingBets', '[]'
+    ], () => {});
 });
 
 /**
