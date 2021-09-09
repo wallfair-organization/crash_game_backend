@@ -68,7 +68,7 @@ server.get('/', (req, res) => {
  */
 server.get('/api/current', async (req, res) => {
     // retrieve the last 10 jobs and extract crashFactor from them
-    const lastGames = await agenda.jobs({name: "crashgame_end"}, {lastFinishedAt: -1}, 10, 0);  
+    const lastGames = await agenda.jobs({name: "crashgame_end"}, {lastFinishedAt: -1}, 10, 0);
     const lastCrashes = lastGames.map(lc => lc.attrs.data.crashFactor);
 
     // read info from redis
@@ -98,6 +98,16 @@ server.post('/api/trade', passport.authenticate('jwt', { session: false }), asyn
         return;
     }
 
+    if(+amount < 1){
+        res.status(422).send(`Amount should be at least 1`);
+        return;
+    }
+
+    if(+crashFactor <= 1){
+        res.status(422).send(`Crash factor should be higher than 1`);
+        return;
+    }
+
     // verify that user has enough balance to perform trade
     let balance = await wallet.getBalance(req.user._id.toString());
     if (balance <= amount) {
@@ -121,7 +131,7 @@ server.post('/api/trade', passport.authenticate('jwt', { session: false }), asyn
         }));
 
         const game = await rdsGet(redis, GAME_NAME);
-        
+
         // determine if bet is in the current or next game
         const betKey = game.state === 'STARTED' ? 'upcomingBets' : 'currentBets';
 
