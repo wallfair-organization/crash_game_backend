@@ -26,45 +26,49 @@ const ONE = 10000n;
  * This method decides the crash factor, and schedules the end of the game.
  */
  agenda.define("crashgame_start", { lockLifetime: 10000 }, async (job) => {
-    /*if (Math.random() > 0.1) {
-        console.log(new Date(), "crashgame_start will fail on purpose!");
+    // if (Math.random() > 0.5) {
+    //     console.log(new Date(), "crashgame_start will fail on purpose!", job.attrs._id);
+    //
+    //     // 50% chance if failure
+    //     throw new Error("FAIL!")
+    // }
 
-        // 10% chance if failure
-        throw new Error("FAIL!")
-    }*/
-
-    // ensure only one game is starting from the previous game
-    let {prevGame} = job.attrs.data;
+     // ensure only one game is starting from the previous game
+     let {prevGame} = job.attrs.data;
+     // use the id of this job as gameId
+     let gameId = job.attrs._id;
     const jobs = await agenda.jobs({"name": "crashgame_start", "data.prevGame": prevGame}, {"data.createdAt": 1}, 1, 0);
     console.log(new Date(), "crashgame_start", jobs.length);
 
-    if (jobs[0].attrs._id.toString() != job.attrs._id.toString()) {
+    if (jobs[0].attrs._id.toString() !== job.attrs._id.toString()) {
         console.log(new Date(), "crashgame_start", `Job ${job.attrs._id.toString()} will skip execution`, jobs[0].attrs._id.toString());
         return; // does nothing in this case
     }
 
-    // use the id of this job as gameId
-    let gameId = job.attrs._id;
+    //End job already specified, do nothing
+    if(job.attrs.data.endJob) return;
+     // decides on a crash factor
+     let crashFactor = gaussian();
+     let gameLengthSeconds = Math.ceil(crashFactor);
 
-    /// log the start of the game for debugging purposes
+
+    // log the start of the game for debugging purposes
     console.log(new Date(), `Next game is starting with an id of ${gameId}`);
 
-    // decides on a crash factor
-    let crashFactor = gaussian();
-    let nextGameTime = Math.ceil(crashFactor);
-
     // log the chosen parameters for debugging purposes
-    console.log(new Date(), `The game ${gameId} will crash with a factor of ${crashFactor} in ${nextGameTime} seconds`);
+    console.log(new Date(), `The game ${gameId} will crash with a factor of ${crashFactor} in ${gameLengthSeconds} seconds`);
 
     // lock open trades to this particular game
     await wallet.lockOpenTrades(gameId);
+     // schedules the end of the game
+     const endJob = await agenda.schedule(`in ${gameLengthSeconds} seconds`, "crashgame_end", {
+         createdAt: new Date(),
+         crashFactor,
+         gameId
+     });
+     job.attrs.data.endJob = endJob.attrs._id
+     await job.save()
 
-    // schedules the end of the game
-    agenda.schedule(`in ${nextGameTime} seconds`, "crashgame_end", {
-        createdAt: new Date(),
-        crashFactor,
-        gameId
-    });
 
     // notify others that game started
     redis.publish('message', JSON.stringify({
@@ -77,8 +81,8 @@ const ONE = 10000n;
     }));
 
     // change redis state of the game
-    redis.hmset([GAME_NAME, 
-        "state", "STARTED", 
+    redis.hmset([GAME_NAME,
+        "state", "STARTED",
         "timeStarted", new Date().toISOString()]);
 });
 
@@ -88,30 +92,44 @@ const ONE = 10000n;
  * It also needs to schedule the start of the next game
  */
 agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
-    /*if (Math.random() > 0.5) {
-        console.log(new Date(), "crashgame_end will fail on purpose!");
-
-        // 50% chance if failure
-        throw new Error("FAIL!")
-    }*/
+    // if (Math.random() > 0.5) {
+    //     console.log(new Date(), "crashgame_end will fail on purpose!", job.attrs._id);
+    //     // 50% chance if failure
+    //     throw new Error("FAIL!")
+    // }
 
     // extract needed information from the job
     let {crashFactor, gameId} = job.attrs.data;
 
     // ensure the game ends only once
     const jobs = await agenda.jobs({"name": "crashgame_end", "data.gameId": gameId}, {"data.createdAt": 1}, 1, 0);
+
     console.log(new Date(), "crashgame_end", jobs.length);
 
-    if (jobs[0].attrs._id.toString() != job.attrs._id.toString()) {
+    if (jobs[0].attrs._id.toString() !== job.attrs._id.toString()) {
         console.log(new Date(), "crashgame_end", `Job ${job.attrs._id.toString()} will skip execution`, jobs[0].attrs._id.toString());
         return; // does nothing in this case
     }
-    
+
     // log start of next game for debugging purposes
     console.log(new Date(), `Game ${gameId} crashed now. Next game starts in ${GAME_INTERVAL_IN_SECONDS} seconds`);
 
-    // end game and update balanes
+    // Ensure another process won't create the same crashgame_start job
+    if(job.attrs.data.nextStartJob) return;
+
+    // end game and update balances
     let winners = await wallet.distributeRewards(gameId, crashFactor);
+
+    // schedules the next game
+    // if rewards are not distributed we won't have next game scheduled
+    let startJob = await agenda.schedule(`in ${GAME_INTERVAL_IN_SECONDS} seconds`, "crashgame_start", {
+        createdAt: new Date(),
+        prevGame: gameId
+    });
+    job.attrs.data.nextStartJob = startJob.attrs._id
+    await job.save()
+
+    let nextGameAt = startJob.attrs.nextRunAt;
 
     // notify others that game ended
     redis.publish('message', JSON.stringify({
@@ -131,7 +149,7 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
     winners.forEach((winner) => {
         let reward = Number(winner.reward) / Number(ONE);
         let stakedAmount = parseInt(winner.stakedamount) / Number(ONE);
-        
+
         redis.publish('message', JSON.stringify({
             to: winner.userid,
             event: "CASINO_REWARD",
@@ -145,16 +163,10 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
         }));
     });
 
-    // schedules the next game
-    let startJob = await agenda.schedule(`in ${GAME_INTERVAL_IN_SECONDS} seconds`, "crashgame_start", {
-        createdAt: new Date(),
-        prevGame: gameId
-    });
-    let nextGameAt = startJob.attrs.nextRunAt;
 
     // change redis state of the game
-    redis.hset([GAME_NAME, 
-        "state", "ENDED", 
+    redis.hset([GAME_NAME,
+        "state", "ENDED",
         "nextGameAt", nextGameAt,
         "currentBets", upcomingBets,
         'upcomingBets', '[]'
@@ -169,7 +181,7 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
  agenda.on('fail', async (err, job) => {
     // log error on console with reason
     console.log(new Date(), `Failure detected for job ${job.attrs._id}.`, err);
-
+    if(job.attrs.data.endJob || job.attrs.data.nextStartJob) return;
     // try again in 2 seconds
     job.schedule("in 2 seconds");
     await job.save();
@@ -189,7 +201,7 @@ module.exports = {
         const jobs = await agenda.jobs({}, {"data.createdAt": -1}, 1, 0);
 
         // create first job ever
-        if (jobs.length == 0) {
+        if (jobs.length === 0) {
             agenda.schedule(`in ${GAME_INTERVAL_IN_SECONDS} seconds`, "crashgame_start", {
                 createdAt: new Date(),
                 prevGame: "root"
