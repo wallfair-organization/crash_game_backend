@@ -169,7 +169,7 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
 
 
     // change redis state of the game
-    redis.hset([GAME_NAME,
+    redis.hmset([GAME_NAME,
         "state", "ENDED",
         "nextGameAt", nextGameAt,
         "currentBets", upcomingBets,
