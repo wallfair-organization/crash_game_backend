@@ -33,8 +33,11 @@ const ONE = 10000n;
     //     throw new Error("FAIL!")
     // }
 
+    let timeStarted = job.attrs.lastRunAt;
+
      // ensure only one game is starting from the previous game
      let {prevGame} = job.attrs.data;
+
      // use the id of this job as gameId
      let gameId = job.attrs._id;
     const jobs = await agenda.jobs({"name": "crashgame_start", "data.prevGame": prevGame}, {"data.createdAt": 1}, 1, 0);
@@ -76,14 +79,15 @@ const ONE = 10000n;
         event: "CASINO_START",
         data: {
             gameId: job.attrs._id,
-            gameName: GAME_NAME
+            gameName: GAME_NAME,
+            "timeStarted": timeStarted.toISOString()
         }
     }));
 
     // change redis state of the game
     redis.hmset([GAME_NAME,
         "state", "STARTED",
-        "timeStarted", new Date().toISOString()]);
+        "timeStarted", timeStarted.toISOString()]);
 });
 
 /**
@@ -212,7 +216,7 @@ module.exports = {
             console.log(new Date(), "Last job appears to need recovery from failure. Attemping it now.")
             jobs[0].schedule("in 2 seconds");
             await jobs[0].save();
-        }
+        } 
     },
 
     stop: async () => {
