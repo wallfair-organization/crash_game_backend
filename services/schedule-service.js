@@ -52,7 +52,10 @@ const ONE = 10000n;
     if(job.attrs.data.endJob) return;
      // decides on a crash factor
      let crashFactor = gaussian();
-     let gameLengthSeconds = Math.ceil(crashFactor);
+     if (crashFactor < 1) {
+         crashFactor = 1;
+     }
+     let gameLengthSeconds = Math.floor(crashFactor);
 
 
     // log the start of the game for debugging purposes
