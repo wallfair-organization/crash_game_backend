@@ -51,7 +51,9 @@ const ONE = 10000n;
     //End job already specified, do nothing
     if(job.attrs.data.endJob) return;
      // decides on a crash factor
-     let crashFactor = gaussian();
+     let crashFactor = gaussian() * 10;
+     console.log("Crash factor decided", 10);
+     
      if (crashFactor < 1) {
          crashFactor = 1;
      }
