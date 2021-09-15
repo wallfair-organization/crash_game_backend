@@ -11,7 +11,7 @@ const GAUSSIAN_MEAN = parseFloat(process.env.GAUSSIAN_MEAN || 0.0);
 const GAUSSIAN_STDEV = parseFloat(process.env.GAUSSIAN_STDEV || 0.1);
 
 // import gaussian function
-const gaussian = require("@wallfair.io/wallfair-commons").utils.getGaussian(GAUSSIAN_MEAN, GAUSSIAN_STDEV);
+const gaussian = require("@wallfair.io/wallfair-commons").utils.getGaussian(parseFloat(GAUSSIAN_MEAN), parseFloat(GAUSSIAN_STDEV));
 
 // redis publisher used to notify others of updates
 var redis;
@@ -52,8 +52,8 @@ const ONE = 10000n;
     if(job.attrs.data.endJob) return;
      // decides on a crash factor
      let crashFactor = gaussian() * 10;
-     console.log("Crash factor decided", 10);
-     
+     console.log("Crash factor decided", crashFactor);
+
      if (crashFactor < 1) {
          crashFactor = 1;
      }
