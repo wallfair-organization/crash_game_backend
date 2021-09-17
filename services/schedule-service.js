@@ -11,7 +11,8 @@ const GAUSSIAN_MEAN = parseFloat(process.env.GAUSSIAN_MEAN || 0.0);
 const GAUSSIAN_STDEV = parseFloat(process.env.GAUSSIAN_STDEV || 0.1);
 
 // import gaussian function
-const gaussian = require("@wallfair.io/wallfair-commons").utils.getGaussian(parseFloat(GAUSSIAN_MEAN), parseFloat(GAUSSIAN_STDEV));
+const gaussian = require("@wallfair.io/wallfair-commons").utils
+    .getGaussian(parseFloat(GAUSSIAN_MEAN), parseFloat(GAUSSIAN_STDEV));
 
 // redis publisher used to notify others of updates
 var redis;
@@ -20,6 +21,7 @@ var redis;
 const wallet = require("./wallet-service");
 
 const ONE = 10000n;
+const GAME_ID = '614381d74f78686665a5bb76';
 
 /**
  * Method for starting the game.
@@ -80,7 +82,7 @@ const ONE = 10000n;
 
     // notify others that game started
     redis.publish('message', JSON.stringify({
-        to: GAME_NAME,
+        to: GAME_ID,
         event: "CASINO_START",
         data: {
             gameId: job.attrs._id,
@@ -90,7 +92,7 @@ const ONE = 10000n;
     }));
 
     // change redis state of the game
-    redis.hmset([GAME_NAME,
+    redis.hmset([GAME_ID,
         "state", "STARTED",
         "timeStarted", timeStarted.toISOString()]);
 });
@@ -142,7 +144,7 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
 
     // notify others that game ended
     redis.publish('message', JSON.stringify({
-        to: GAME_NAME,
+        to: GAME_ID,
         event: "CASINO_END",
         data: {
             crashFactor,
@@ -152,7 +154,7 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
     }));
 
     // extract next game bets
-    const { upcomingBets } = await rdsGet(redis, GAME_NAME);
+    const { upcomingBets } = await rdsGet(redis, GAME_ID);
 
     // notifies about wins
     winners.forEach((winner) => {
@@ -174,7 +176,7 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
 
 
     // change redis state of the game
-    redis.hmset([GAME_NAME,
+    redis.hmset([GAME_ID,
         "state", "ENDED",
         "nextGameAt", nextGameAt,
         "currentBets", upcomingBets,

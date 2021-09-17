@@ -2,7 +2,7 @@
 const dotenv = require('dotenv');
 dotenv.config();
 
-const GAME_NAME = process.env.GAME_NAME || "ROSI";
+const GAME_ID = '614381d74f78686665a5bb76';
 
 // Create Redis pub and sub clients
 const { createClient } = require("redis");
@@ -16,8 +16,8 @@ subClient.on("message", (channel, message) => {
     console.log(new Date(), channel, message);
 });
 
-subClient.subscribe(GAME_NAME);
-console.log("Subscribing to topic ", GAME_NAME)
+subClient.subscribe(GAME_ID);
+console.log("Subscribing to topic ", GAME_ID)
 
 subClient.subscribe("message");
 console.log("Subscribing to topic ", "message")

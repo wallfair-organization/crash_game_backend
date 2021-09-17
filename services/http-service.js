@@ -14,6 +14,7 @@ const { agenda } = require("./schedule-service");
 
 // define constants that can be overriden in .env
 const GAME_NAME = process.env.GAME_NAME || "ROSI";
+const GAME_ID = '614381d74f78686665a5bb76';
 const MAX_AMOUNT_PER_TRADE = process.env.MAX_AMOUNT_PER_TRADE || 100;
 
 // redis publisher used to notify others of updates
@@ -72,7 +73,7 @@ server.get('/api/current', async (req, res) => {
     const lastCrashes = lastGames.map(lc => lc.attrs.data.crashFactor);
 
     // read info from redis
-    const { timeStarted, nextGameAt, state, currentBets, upcomingBets } = await rdsGet(redis, GAME_NAME);
+    const { timeStarted, nextGameAt, state, currentBets, upcomingBets } = await rdsGet(redis, GAME_ID);
 
     res.status(200).send({
         timeStarted,
@@ -121,7 +122,7 @@ server.post('/api/trade', passport.authenticate('jwt', { session: false }), asyn
 
         // notify users
         redis.publish('message', JSON.stringify({
-            to: GAME_NAME,
+            to: GAME_ID,
             event: "CASINO_TRADE",
             data: {
                 amount,
@@ -130,7 +131,7 @@ server.post('/api/trade', passport.authenticate('jwt', { session: false }), asyn
             }
         }));
 
-        const game = await rdsGet(redis, GAME_NAME);
+        const game = await rdsGet(redis, GAME_ID);
 
         // determine if bet is in the current or next game
         const betKey = game.state === 'STARTED' ? 'upcomingBets' : 'currentBets';
@@ -149,7 +150,7 @@ server.post('/api/trade', passport.authenticate('jwt', { session: false }), asyn
         ];
 
         // update storage
-        redis.hmset([GAME_NAME, betKey, JSON.stringify(bets)]);
+        redis.hmset([GAME_ID, betKey, JSON.stringify(bets)]);
 
         res.status(200).json({});
     } catch (err) {
