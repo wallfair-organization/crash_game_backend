@@ -79,8 +79,8 @@ server.get('/api/current', async (req, res) => {
         timeStarted,
         nextGameAt,
         state,
-        currentBets: JSON.parse(currentBets),
-        upcomingBets: JSON.parse(upcomingBets),
+        currentBets: currentBets ? JSON.parse(currentBets) : [],
+        upcomingBets: upcomingBets ? JSON.parse(upcomingBets) : [],
         lastCrashes,
     });
 });
