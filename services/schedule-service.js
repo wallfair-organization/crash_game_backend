@@ -147,6 +147,7 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
         to: GAME_ID,
         event: "CASINO_END",
         data: {
+            nextGameAt,
             crashFactor,
             gameId,
             gameName: GAME_NAME
@@ -223,7 +224,7 @@ module.exports = {
             console.log(new Date(), "Last job appears to need recovery from failure. Attemping it now.")
             jobs[0].schedule("in 2 seconds");
             await jobs[0].save();
-        } 
+        }
     },
 
     stop: async () => {
