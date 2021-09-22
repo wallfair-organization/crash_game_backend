@@ -15,7 +15,7 @@ const { agenda } = require("./schedule-service");
 // define constants that can be overriden in .env
 const GAME_NAME = process.env.GAME_NAME || "ROSI";
 const GAME_ID = '614381d74f78686665a5bb76';
-const MAX_AMOUNT_PER_TRADE = process.env.MAX_AMOUNT_PER_TRADE || 100;
+const MAX_AMOUNT_PER_TRADE = process.env.MAX_AMOUNT_PER_TRADE || 100000;
 
 // redis publisher used to notify others of updates
 var redis;
@@ -104,7 +104,7 @@ server.post('/api/trade', passport.authenticate('jwt', { session: false }), asyn
         return;
     }
 
-    if(+crashFactor <= 1){
+    if(+crashFactor < 1){
         res.status(422).send(`Crash factor should be higher than 1`);
         return;
     }
