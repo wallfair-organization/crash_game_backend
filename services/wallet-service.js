@@ -35,7 +35,8 @@ module.exports = {
     attemptCashout: async (gameId, crashFactor, userWalletAddr) => {
         console.log(new Date(), `Attempt cashout for gameId ${gameId}, crashFactor ${crashFactor}, user ${userWalletAddr}`);
 
-        return await casinoContract.cashout(userWalletAddr, crashFactor, gameId);
+        let result = await casinoContract.cashout(userWalletAddr, crashFactor, gameId);
+        return result;
     },
 
     distributeRewards: async (gameId, crashFactor) => {

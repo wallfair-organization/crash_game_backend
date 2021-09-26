@@ -102,7 +102,7 @@ server.post('/api/cashout', passport.authenticate('jwt', { session: false }), as
             return;
         }
 
-        let { totalReward, stakedAmount } = walletService.attemptCashout(gameId, crashFactor, req.user._id.toString());
+        let { totalReward, stakedAmount } = await walletService.attemptCashout(gameId, crashFactor, req.user._id.toString());
 
         // create notification for user
         redis.publish('message', JSON.stringify({
@@ -112,8 +112,8 @@ server.post('/api/cashout', passport.authenticate('jwt', { session: false }), as
                 crashFactor,
                 gameId,
                 gameName: GAME_NAME,
-                stakedAmount,
-                reward: totalReward,
+                stakedAmount: parseInt(stakedAmount.toString()) / 1000,
+                reward: parseInt(totalReward.toString()) / 1000,
                 userId: req.user._id.toString(),
             }
         }));
@@ -126,13 +126,19 @@ server.post('/api/cashout', passport.authenticate('jwt', { session: false }), as
                 crashFactor,
                 gameId,
                 gameName: GAME_NAME,
-                stakedAmount,
-                reward: totalReward,
+                stakedAmount: parseInt(stakedAmount.toString()) / 1000,
+                reward: parseInt(totalReward.toString()) / 1000,
                 userId: req.user._id.toString()
             }
         }));
 
-        res.status(200).json({totalReward, stakedAmount, crashFactor});
+        res.status(200).json({
+            crashFactor,
+            gameId,
+            gameName: GAME_NAME,
+            stakedAmount: parseInt(stakedAmount.toString()) / 1000,
+            reward: parseInt(totalReward.toString()) / 1000,
+        });
     } catch (err) {
         console.log(err);
         res.status(500).send(err);
