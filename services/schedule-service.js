@@ -95,6 +95,7 @@ const GAME_ID = process.env.GAME_ID || '614381d74f78686665a5bb76';
     redis.hmset([GAME_ID,
         "state", "STARTED",
         "gameId", gameId.toString(),
+        "currentCrashFactor", crashFactor + "",
         "timeStarted", timeStarted.toISOString()]);
 });
 
@@ -171,7 +172,8 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
                 gameId,
                 gameName: GAME_NAME,
                 stakedAmount,
-                reward
+                reward,
+                userId: winner.userid,
             }
         }));
     });
@@ -184,6 +186,7 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
         "currentBets", upcomingBets,
         'upcomingBets', '[]',
         "gameId", "",
+        "currentCrashFactor", ""
     ], () => {});
 });
 

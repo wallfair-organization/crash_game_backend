@@ -89,7 +89,7 @@ server.get('/api/current', async (req, res) => {
 
 server.post('/api/cashout', passport.authenticate('jwt', { session: false }), async (req, res) => {
     try {
-        const { timeStarted, gameId } = await rdsGet(redis, GAME_ID);
+        const { timeStarted, gameId, currentCrashFactor } = await rdsGet(redis, GAME_ID);
 
         let b = timeStarted.split(/\D+/);
         let startedAt = Date.UTC(b[0], --b[1], b[2], b[3], b[4], b[5], b[6]);
@@ -97,8 +97,10 @@ server.post('/api/cashout', passport.authenticate('jwt', { session: false }), as
         let timeDiff = Date.now() - startedAt;
         let crashFactor = timeDiff / 1000; // TODO Sebastian calculate here
 
-        // TODO
-        // gui - put decided crash factor on redis and load also here
+        if (crashFactor > currentCrashFactor) {
+            res.status(500).send("Too late!");
+            return;
+        }
 
         let { totalReward, stakedAmount } = walletService.attemptCashout(gameId, crashFactor, req.user._id.toString());
 
@@ -111,7 +113,8 @@ server.post('/api/cashout', passport.authenticate('jwt', { session: false }), as
                 gameId,
                 gameName: GAME_NAME,
                 stakedAmount,
-                reward: totalReward
+                reward: totalReward,
+                userId: req.user._id.toString(),
             }
         }));
 
@@ -124,7 +127,8 @@ server.post('/api/cashout', passport.authenticate('jwt', { session: false }), as
                 gameId,
                 gameName: GAME_NAME,
                 stakedAmount,
-                reward: totalReward
+                reward: totalReward,
+                userId: req.user._id.toString()
             }
         }));
 
