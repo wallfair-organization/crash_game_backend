@@ -4,7 +4,7 @@
   "description": "Backend implementation for the Wallfair.io crash game",
   "main": "index.js",
   "scripts": {
-    "server": "node index.js",
+    "start": "node index.js",
     "client": "node client.js"
   },
   "keywords": [
@@ -20,8 +20,8 @@
   "author": "Wallfair.io",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
-    "@wallfair.io/smart_contract_mock": "0.3.0",
-    "@wallfair.io/wallfair-commons": "1.4.7",
+    "@wallfair.io/smart_contract_mock": "0.5.5",
+    "@wallfair.io/wallfair-commons": "1.7.4",
     "agenda": "^4.2.1",
     "cors": "^2.8.5",
     "dotenv": "^10.0.0",

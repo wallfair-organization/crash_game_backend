@@ -32,6 +32,13 @@ module.exports = {
         console.log(new Date(), `All open trades locked in game ${gameId}`);
     },
 
+    attemptCashout: async (gameId, crashFactor, userWalletAddr) => {
+        console.log(new Date(), `Attempt cashout for gameId ${gameId}, crashFactor ${crashFactor}, user ${userWalletAddr}`);
+
+        let result = await casinoContract.cashout(userWalletAddr, crashFactor, gameId);
+        return result;
+    },
+
     distributeRewards: async (gameId, crashFactor) => {
         console.log(new Date(), `Distribute rewards for all trades on game ${gameId} with a crash factor under ${crashFactor}`)
         
