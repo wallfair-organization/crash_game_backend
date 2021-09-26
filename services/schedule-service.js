@@ -21,7 +21,7 @@ var redis;
 const wallet = require("./wallet-service");
 
 const ONE = 10000n;
-const GAME_ID = '614381d74f78686665a5bb76';
+const GAME_ID = process.env.GAME_ID || '614381d74f78686665a5bb76';
 
 /**
  * Method for starting the game.
@@ -94,6 +94,7 @@ const GAME_ID = '614381d74f78686665a5bb76';
     // change redis state of the game
     redis.hmset([GAME_ID,
         "state", "STARTED",
+        "gameId", gameId.toString(),
         "timeStarted", timeStarted.toISOString()]);
 });
 
@@ -181,7 +182,8 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
         "state", "ENDED",
         "nextGameAt", nextGameAt,
         "currentBets", upcomingBets,
-        'upcomingBets', '[]'
+        'upcomingBets', '[]',
+        "gameId", "",
     ], () => {});
 });
 

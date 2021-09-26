@@ -14,7 +14,7 @@ const { agenda } = require("./schedule-service");
 
 // define constants that can be overriden in .env
 const GAME_NAME = process.env.GAME_NAME || "ROSI";
-const GAME_ID = '614381d74f78686665a5bb76';
+const GAME_ID = process.env.GAME_ID || '614381d74f78686665a5bb76';
 const MAX_AMOUNT_PER_TRADE = process.env.MAX_AMOUNT_PER_TRADE || 100000;
 
 // redis publisher used to notify others of updates
@@ -22,6 +22,7 @@ var redis;
 
 // wallet service for wallet/blockchain operations
 const wallet = require("./wallet-service");
+const walletService = require('./wallet-service');
 
 // configure passport to use JWT strategy with KEY provide via environment variable
 // the secret key must be the same as the one used in the main application
@@ -73,7 +74,7 @@ server.get('/api/current', async (req, res) => {
     const lastCrashes = lastGames.map(lc => lc.attrs.data.crashFactor);
 
     // read info from redis
-    const { timeStarted, nextGameAt, state, currentBets, upcomingBets } = await rdsGet(redis, GAME_ID);
+    const { timeStarted, nextGameAt, state, currentBets, upcomingBets, gameId } = await rdsGet(redis, GAME_ID);
 
     res.status(200).send({
         timeStarted,
@@ -82,7 +83,24 @@ server.get('/api/current', async (req, res) => {
         currentBets: currentBets ? JSON.parse(currentBets) : [],
         upcomingBets: upcomingBets ? JSON.parse(upcomingBets) : [],
         lastCrashes,
+        gameId,
     });
+});
+
+server.post('/api/cashout', passport.authenticate('jwt', { session: false }), async (req, res) => {
+    try {
+        const { timeStarted, gameId } = await rdsGet(redis, GAME_ID);
+
+        let timeDiff = Date.now() - timeStarted;
+        let crashFactor = timeDiff / 1000; // TODO Sebastian calculate here
+
+        let reward = walletService.attemptCashout(gameId, crashFactor, req.user._id);
+
+        res.status(200).json({reward});
+    } catch (err) {
+        console.log(err);
+        res.status(500).send(err);
+    }
 });
 
 /**
