@@ -91,12 +91,44 @@ server.post('/api/cashout', passport.authenticate('jwt', { session: false }), as
     try {
         const { timeStarted, gameId } = await rdsGet(redis, GAME_ID);
 
-        let timeDiff = Date.now() - timeStarted;
+        let b = timeStarted.split(/\D+/);
+        let startedAt = Date.UTC(b[0], --b[1], b[2], b[3], b[4], b[5], b[6]);
+
+        let timeDiff = Date.now() - startedAt;
         let crashFactor = timeDiff / 1000; // TODO Sebastian calculate here
 
-        let reward = walletService.attemptCashout(gameId, crashFactor, req.user._id);
+        // TODO
+        // gui - put decided crash factor on redis and load also here
 
-        res.status(200).json({reward});
+        let { totalReward, stakedAmount } = walletService.attemptCashout(gameId, crashFactor, req.user._id.toString());
+
+        // create notification for user
+        redis.publish('message', JSON.stringify({
+            to: req.user._id.toString(),
+            event: "CASINO_REWARD",
+            data: {
+                crashFactor,
+                gameId,
+                gameName: GAME_NAME,
+                stakedAmount,
+                reward: totalReward
+            }
+        }));
+
+        // create notification for channel
+        redis.publish('message', JSON.stringify({
+            to: GAME_NAME,
+            event: "CASINO_REWARD",
+            data: {
+                crashFactor,
+                gameId,
+                gameName: GAME_NAME,
+                stakedAmount,
+                reward: totalReward
+            }
+        }));
+
+        res.status(200).json({totalReward, stakedAmount, crashFactor});
     } catch (err) {
         console.log(err);
         res.status(500).send(err);
@@ -145,7 +177,8 @@ server.post('/api/trade', passport.authenticate('jwt', { session: false }), asyn
             data: {
                 amount,
                 crashFactor,
-                username: req.user.username
+                username: req.user.username,
+                userId: req.user._id,
             }
         }));
 
