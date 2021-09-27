@@ -49,9 +49,11 @@ const pubClient = createClient({
     }
 
     // init http server
+    console.log(new Date(), "Initializing app server.")
     appServer.init(pubClient);
 
     // init scheduling service
+    console.log(new Date(), "Initializing scheduler");
     await scheduler.init(pubClient);
 
     // log to console for debugging purposes

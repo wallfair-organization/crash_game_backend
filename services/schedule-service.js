@@ -131,7 +131,8 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
     if(job.attrs.data.nextStartJob) return;
 
     // end game and update balances
-    let winners = await wallet.distributeRewards(gameId, crashFactor);
+    // DISABLED FOR NOW
+    // let winners = await wallet.distributeRewards(gameId, crashFactor);
 
     // schedules the next game
     // if rewards are not distributed we won't have next game scheduled
@@ -160,7 +161,8 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
     const { upcomingBets } = await rdsGet(redis, GAME_ID);
 
     // notifies about wins
-    winners.forEach((winner) => {
+    // DISABLED FOR NOW
+    /*winners.forEach((winner) => {
         let reward = Number(winner.reward) / Number(ONE);
         let stakedAmount = parseInt(winner.stakedamount) / Number(ONE);
 
@@ -176,7 +178,7 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
                 userId: winner.userid,
             }
         }));
-    });
+    });*/
 
 
     // change redis state of the game
@@ -229,6 +231,8 @@ module.exports = {
             console.log(new Date(), "Last job appears to need recovery from failure. Attemping it now.")
             jobs[0].schedule("in 2 seconds");
             await jobs[0].save();
+        } else {
+            console.log(jobs)
         }
     },
 

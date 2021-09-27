@@ -15,7 +15,7 @@ const { agenda } = require("./schedule-service");
 // define constants that can be overriden in .env
 const GAME_NAME = process.env.GAME_NAME || "ROSI";
 const GAME_ID = process.env.GAME_ID || '614381d74f78686665a5bb76';
-const MAX_AMOUNT_PER_TRADE = process.env.MAX_AMOUNT_PER_TRADE || 100000;
+const MAX_AMOUNT_PER_TRADE = process.env.MAX_AMOUNT_PER_TRADE ? parseInt(process.env.MAX_AMOUNT_PER_TRADE) : 10000;
 
 // redis publisher used to notify others of updates
 var redis;
