@@ -59,7 +59,10 @@ const GAME_ID = process.env.GAME_ID || '614381d74f78686665a5bb76';
      if (crashFactor < 1) {
          crashFactor = 1;
      }
-     let gameLengthSeconds = Math.floor(crashFactor * 2);
+
+     let gameLengthSeconds = crashFactor === 1
+        ? 0
+        : Math.floor(crashFactor * 2) - 1;
 
 
     // log the start of the game for debugging purposes
