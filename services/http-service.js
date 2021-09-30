@@ -95,7 +95,7 @@ server.post('/api/cashout', passport.authenticate('jwt', { session: false }), as
         let startedAt = Date.UTC(b[0], --b[1], b[2], b[3], b[4], b[5], b[6]);
 
         let timeDiff = Date.now() - startedAt;
-        let crashFactor = timeDiff / 500; // TODO Sebastian calculate here
+        let crashFactor = (timeDiff / 10000) + 1; // TODO Sebastian calculate here
 
         if (crashFactor > currentCrashFactor) {
             res.status(500).send("Too late!");
