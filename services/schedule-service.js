@@ -60,12 +60,12 @@ const GAME_ID = process.env.GAME_ID || '614381d74f78686665a5bb76';
 
      // debug 
      console.log("Crash factor decided", crashFactor);
-
+/*
      if (crashFactor < 1) {
          crashFactor = 1;
      }
 
- /*    let gameLengthSeconds = crashFactor === 1
+     let gameLengthSeconds = crashFactor === 1
         ? 0
         : Math.floor(crashFactor * 2) - 1;
   */
