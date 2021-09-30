@@ -13,6 +13,9 @@ const GAUSSIAN_STDEV = parseFloat(process.env.GAUSSIAN_STDEV || 0.1);
 // import gaussian function
 const gaussian = require("@wallfair.io/wallfair-commons").utils
     .getGaussian(parseFloat(GAUSSIAN_MEAN), parseFloat(GAUSSIAN_STDEV));
+// import length of gam
+const totalDelayTime  = require("@wallfair.io/wallfair-commons/utils/delay_fixed");
+
 
 // redis publisher used to notify others of updates
 var redis;
@@ -54,8 +57,11 @@ const GAME_ID = process.env.GAME_ID || '614381d74f78686665a5bb76';
     if(job.attrs.data.endJob) return;
      // decides on a crash factor
      let crashFactor = gaussian() * 10;
+
+     // debug 
      console.log("Crash factor decided", crashFactor);
 
+     /*
      if (crashFactor < 1) {
          crashFactor = 1;
      }
@@ -63,18 +69,31 @@ const GAME_ID = process.env.GAME_ID || '614381d74f78686665a5bb76';
      let gameLengthSeconds = crashFactor === 1
         ? 0
         : Math.floor(crashFactor * 2) - 1;
+*/  
 
+    if (crashFactor < 1) {
+        gameLengthSeconds = function() {return 0};
+    }
+
+    else {
+        gameLengthSeconds = totalDelayTime(crashFactor);
+
+    }
+
+
+     // debug 
+     console.log("Crash factor total time ", gameLengthSeconds());
 
     // log the start of the game for debugging purposes
     console.log(new Date(), `Next game is starting with an id of ${gameId}`);
 
     // log the chosen parameters for debugging purposes
-    console.log(new Date(), `The game ${gameId} will crash with a factor of ${crashFactor} in ${gameLengthSeconds} seconds`);
+    console.log(new Date(), `The game ${gameId} will crash with a factor of ${crashFactor} in ${gameLengthSeconds()} seconds`);
 
     // lock open trades to this particular game
     await wallet.lockOpenTrades(gameId);
      // schedules the end of the game
-     const endJob = await agenda.schedule(`in ${gameLengthSeconds} seconds`, "crashgame_end", {
+     const endJob = await agenda.schedule(`in ${gameLengthSeconds()} seconds`, "crashgame_end", {
          createdAt: new Date(),
          crashFactor,
          gameId
