@@ -62,7 +62,16 @@ const GAME_ID = process.env.GAME_ID || '614381d74f78686665a5bb76';
      console.log("Crash factor decided", crashFactor);
 
     if (crashFactor < 1) {
-        gameLengthSeconds = 0;
+        
+        var bit = Math.random() < 0.4; // samples true with prob .4
+        
+        if (bit){
+            crashFactor = gaussian() * 10;
+        }
+        else{
+            gameLengthSeconds = 0;
+        }
+
     } else {
         gameLengthSeconds = Math.floor(crashUtils.totalDelayTime(crashFactor) / 1000);
     }
