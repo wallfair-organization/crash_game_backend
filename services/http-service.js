@@ -101,6 +101,7 @@ server.post('/api/cashout', passport.authenticate('jwt', { session: false }), as
 
         console.log("CASHOUT", crashFactor);
 
+
         if (crashFactor > currentCrashFactor) {
             res.status(500).send("Too late!");
             return;
@@ -108,23 +109,9 @@ server.post('/api/cashout', passport.authenticate('jwt', { session: false }), as
 
         let { totalReward, stakedAmount } = await walletService.attemptCashout(gameId, crashFactor, req.user._id.toString());
 
-        // create notification for user
-        redis.publish('message', JSON.stringify({
-            to: req.user._id.toString(),
-            event: "CASINO_REWARD",
-            data: {
-                crashFactor,
-                gameId,
-                gameName: GAME_NAME,
-                stakedAmount: parseInt(stakedAmount.toString()) / 1000,
-                reward: parseInt(totalReward.toString()) / 1000,
-                userId: req.user._id.toString(),
-            }
-        }));
-
         // create notification for channel
         redis.publish('message', JSON.stringify({
-            to: GAME_NAME,
+            to: GAME_ID,
             event: "CASINO_REWARD",
             data: {
                 crashFactor,

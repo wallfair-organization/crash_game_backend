@@ -65,7 +65,6 @@ const GAME_ID = process.env.GAME_ID || '614381d74f78686665a5bb76';
         gameLengthSeconds = 0;
     } else {
         gameLengthSeconds = Math.floor(crashUtils.totalDelayTime(crashFactor) / 1000);
-
     }
 
     // debug 
