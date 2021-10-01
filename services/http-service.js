@@ -117,8 +117,8 @@ server.post('/api/cashout', passport.authenticate('jwt', { session: false }), as
                 crashFactor,
                 gameId,
                 gameName: GAME_NAME,
-                stakedAmount: parseInt(stakedAmount.toString()) / 1000,
-                reward: parseInt(totalReward.toString()) / 1000,
+                stakedAmount: parseInt(stakedAmount.toString()) / 10000,
+                reward: parseInt(totalReward.toString()) / 10000,
                 userId: req.user._id.toString()
             }
         }));
