@@ -13,6 +13,9 @@ const GAUSSIAN_STDEV = parseFloat(process.env.GAUSSIAN_STDEV || 0.1);
 // import gaussian function
 const gaussian = require("@wallfair.io/wallfair-commons").utils
     .getGaussian(parseFloat(GAUSSIAN_MEAN), parseFloat(GAUSSIAN_STDEV));
+// import length of gam
+
+const crashUtils = require("../utils/crash_utils");
 
 // redis publisher used to notify others of updates
 var redis;
@@ -54,16 +57,18 @@ const GAME_ID = process.env.GAME_ID || '614381d74f78686665a5bb76';
     if(job.attrs.data.endJob) return;
      // decides on a crash factor
      let crashFactor = gaussian() * 10;
+
+     // debug 
      console.log("Crash factor decided", crashFactor);
 
-     if (crashFactor < 1) {
-         crashFactor = 1;
-     }
+    if (crashFactor < 1) {
+        gameLengthSeconds = 0;
+    } else {
+        gameLengthSeconds = Math.floor(crashUtils.totalDelayTime(crashFactor) / 1000);
+    }
 
-     let gameLengthSeconds = crashFactor === 1
-        ? 0
-        : Math.floor(crashFactor * 10) - 10;
-
+    // debug 
+    console.log("Crash factor total time ", gameLengthSeconds);
 
     // log the start of the game for debugging purposes
     console.log(new Date(), `Next game is starting with an id of ${gameId}`);
@@ -101,6 +106,10 @@ const GAME_ID = process.env.GAME_ID || '614381d74f78686665a5bb76';
         "currentCrashFactor", crashFactor + "",
         "timeStarted", timeStarted.toISOString()]);
 });
+
+
+
+
 
 /**
  * Method for ending the game.

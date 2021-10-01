@@ -12,6 +12,8 @@ const wallfair = require("@wallfair.io/wallfair-commons");
 
 const { agenda } = require("./schedule-service");
 
+const crashUtils = require("../utils/crash_utils");
+
 // define constants that can be overriden in .env
 const GAME_NAME = process.env.GAME_NAME || "ROSI";
 const GAME_ID = process.env.GAME_ID || '614381d74f78686665a5bb76';
@@ -95,7 +97,10 @@ server.post('/api/cashout', passport.authenticate('jwt', { session: false }), as
         let startedAt = Date.UTC(b[0], --b[1], b[2], b[3], b[4], b[5], b[6]);
 
         let timeDiff = Date.now() - startedAt;
-        let crashFactor = (timeDiff / 10000) + 1; // TODO Sebastian calculate here
+        let crashFactor = crashUtils.calculateCrashFactor(timeDiff);
+
+        console.log("CASHOUT", crashFactor);
+
 
         if (crashFactor > currentCrashFactor) {
             res.status(500).send("Too late!");
