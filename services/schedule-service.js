@@ -58,6 +58,10 @@ const GAME_ID = process.env.GAME_ID || '614381d74f78686665a5bb76';
      // decides on a crash factor
      let crashFactor = gaussian() * 10;
 
+    if (crashFactor < 1) {
+        crashFactor = 1;
+    }
+
      // debug 
      console.log("Crash factor decided", crashFactor);
 
