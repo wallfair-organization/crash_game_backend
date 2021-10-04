@@ -122,6 +122,12 @@ server.post('/api/cashout', passport.authenticate('jwt', { session: false }), as
                 userId: req.user._id.toString()
             }
         }));
+        
+        let user = await User.findById({ _id: req.user._id }, { amountWon: 1 }).exec();
+        if (user) {
+            user.amountWon += parseInt(totalReward.toString()) / 10000;
+            await user.save();
+        }
 
         res.status(200).json({
             crashFactor,
