@@ -21,7 +21,7 @@
   "license": "AGPL-3.0-or-later",
   "dependencies": {
     "@wallfair.io/smart_contract_mock": "0.5.5",
-    "@wallfair.io/wallfair-commons": "1.7.4",
+    "@wallfair.io/wallfair-commons": "1.7.6",
     "agenda": "^4.2.1",
     "cors": "^2.8.5",
     "dotenv": "^10.0.0",
