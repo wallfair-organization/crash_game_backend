@@ -22,6 +22,9 @@ const pubClient = createClient({
     no_ready_check: false
 });
 
+const { init } = require('./services/notification-service');
+init(pubClient);
+
 /**
  * Main function of this application.
  * Starts the scheduler agent and handles the creation of the first job ever.

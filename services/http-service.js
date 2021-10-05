@@ -11,6 +11,7 @@ const ExtractJWT = require('passport-jwt').ExtractJwt;
 const wallfair = require("@wallfair.io/wallfair-commons");
 
 const { agenda } = require("./schedule-service");
+const { publishEvent, notificationEvents } = require('./notification-service')
 
 const crashUtils = require("../utils/crash_utils");
 
@@ -109,20 +110,30 @@ server.post('/api/cashout', passport.authenticate('jwt', { session: false }), as
 
         let { totalReward, stakedAmount } = await walletService.attemptCashout(gameId, crashFactor, req.user._id.toString());
 
+        const pubData = {
+            crashFactor,
+            gameId,
+            gameName: GAME_NAME,
+            stakedAmount: parseInt(stakedAmount.toString()) / 10000,
+            reward: parseInt(totalReward.toString()) / 10000,
+            userId: req.user._id,
+            username: req.user.username
+        };
+
         // create notification for channel
         redis.publish('message', JSON.stringify({
             to: GAME_ID,
             event: "CASINO_REWARD",
-            data: {
-                crashFactor,
-                gameId,
-                gameName: GAME_NAME,
-                stakedAmount: parseInt(stakedAmount.toString()) / 10000,
-                reward: parseInt(totalReward.toString()) / 10000,
-                userId: req.user._id.toString(),
-                username: req.user.username
-            }
+            data: pubData
         }));
+
+        // save and publish message for uniEvent
+        publishEvent(notificationEvents.EVENT_CASINO_CASHOUT, {
+            producer: 'user',
+            producerId: req.user._id,
+            data: pubData,
+            broadcast: true
+        });
         
         let user = await wallfair.models.User.findById({ _id: req.user._id }, { amountWon: 1 }).exec();
         if (user) {
@@ -178,17 +189,27 @@ server.post('/api/trade', passport.authenticate('jwt', { session: false }), asyn
         // decrease wallet amount
         await wallet.placeTrade(req.user._id, amount, crashFactor);
 
+        const pubData = {
+            amount,
+            crashFactor,
+            username: req.user.username,
+            userId: req.user._id,
+        };
+
         // notify users
         redis.publish('message', JSON.stringify({
             to: GAME_ID,
             event: "CASINO_TRADE",
-            data: {
-                amount,
-                crashFactor,
-                username: req.user.username,
-                userId: req.user._id,
-            }
+            data: pubData
         }));
+
+        // save and publish message for uniEvent
+        publishEvent(notificationEvents.EVENT_CASINO_PLACE_BET, {
+            producer: 'user',
+            producerId: req.user._id,
+            data: pubData,
+            broadcast: true
+        });
 
         const game = await rdsGet(redis, GAME_ID);
 
