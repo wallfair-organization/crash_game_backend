@@ -119,11 +119,12 @@ server.post('/api/cashout', passport.authenticate('jwt', { session: false }), as
                 gameName: GAME_NAME,
                 stakedAmount: parseInt(stakedAmount.toString()) / 10000,
                 reward: parseInt(totalReward.toString()) / 10000,
-                userId: req.user._id.toString()
+                userId: req.user._id.toString(),
+                username: req.user.username
             }
         }));
         
-        let user = await User.findById({ _id: req.user._id }, { amountWon: 1 }).exec();
+        let user = await wallfair.models.User.findById({ _id: req.user._id }, { amountWon: 1 }).exec();
         if (user) {
             user.amountWon += parseInt(totalReward.toString()) / 10000;
             await user.save();
