@@ -1,0 +1,19 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: crash-game-ingress
+  namespace: staging
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  rules:
+  - host: crash-game-k8s.wallfair.io
+    http:
+      paths:
+        - path: /backend(/|$)(.*)
+          pathType: Prefix
+          backend:
+            service:
+              name: crash-game-backend
+              port:
+                number: 80
