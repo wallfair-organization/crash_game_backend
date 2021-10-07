@@ -65,16 +65,16 @@ const GAME_ID = process.env.GAME_ID || '614381d74f78686665a5bb76';
         
         var bit = Math.random() < 0.4; // samples true with prob .4
         
-        if (bit){
-            crashFactor = gaussian() * 10;
-        }
-        else{
-            gameLengthSeconds = 0;
+        if (bit) {
+            crashFactor = Math.max(1, gaussian() * 10);
+        } else {
+            crashFactor = 1;
         }
 
-    } else {
-        gameLengthSeconds = Math.floor(crashUtils.totalDelayTime(crashFactor) / 1000);
-    }
+    } 
+    
+    let gameLengthSeconds = Math.floor(crashUtils.totalDelayTime(crashFactor) / 1000);
+    
 
     // debug 
     console.log("Crash factor total time ", gameLengthSeconds);
