@@ -182,15 +182,13 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
         }
     }));
 
-    // extract next game bets
-    const { upcomingBets } = await rdsGet(redis, GAME_ID);
-
+    
     // notifies about wins
     // DISABLED FOR NOW
     /*winners.forEach((winner) => {
         let reward = Number(winner.reward) / Number(ONE);
         let stakedAmount = parseInt(winner.stakedamount) / Number(ONE);
-
+        
         redis.publish('message', JSON.stringify({
             to: winner.userid,
             event: "CASINO_REWARD",
@@ -204,17 +202,19 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
             }
         }));
     });*/
-
-
+    
+    // extract next game bets
+    const { upcomingBets } = await rdsGet(redis, GAME_ID);
+    
     // change redis state of the game
     redis.hmset([GAME_ID,
         "state", "ENDED",
         "nextGameAt", nextGameAt,
-        "currentBets", upcomingBets,
+        "currentBets", JSON.stringify(upcomingBets),
         'upcomingBets', '[]',
         "gameId", "",
         "currentCrashFactor", ""
-    ], () => {});
+    ]);
 });
 
 /**
