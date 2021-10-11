@@ -1,8 +1,7 @@
 // create express server to run game on
-const passport = require('passport');
 const express = require('express');
-const http    = require('http');
-const cors    = require('cors');
+const http = require('http');
+const cors = require('cors');
 const { rdsGet } = require('../utils/redis');
 const corsOptions = {
     origin: ["wallfair.io",
@@ -24,13 +23,11 @@ const corsOptions = {
     preflightContinue: false,
 }
 
-const JWTstrategy = require('passport-jwt').Strategy;
-const ExtractJWT = require('passport-jwt').ExtractJwt;
-
 const wallfair = require("@wallfair.io/wallfair-commons");
 
 const { agenda } = require("./schedule-service");
 const { publishEvent, notificationEvents } = require('./notification-service')
+const { checkJwt } = require("./auth0-service");
 
 const crashUtils = require("../utils/crash_utils");
 
@@ -47,25 +44,6 @@ const wallet = require("./wallet-service");
 const walletService = require('./wallet-service');
 const userService = require('./user-service');
 
-// configure passport to use JWT strategy with KEY provide via environment variable
-// the secret key must be the same as the one used in the main application
-passport.use('jwt',
-    new JWTstrategy(
-        {
-            secretOrKey: process.env.JWT_KEY,
-            jwtFromRequest: ExtractJWT.fromAuthHeaderAsBearerToken()
-        },
-        async (token, done) => {
-            try {
-                let user = await wallfair.models.User.findById(token.userId).exec();
-                return done(null, user);
-            } catch (error) {
-                done(error);
-            }
-        }
-    )
-);
-
 // Initialise server using express
 const server = express();
 
@@ -74,10 +52,6 @@ server.use(cors(corsOptions));
 
 // Giving server ability to parse json
 server.use(express.json());
-
-// configure server to use passport
-server.use(passport.initialize());
-server.use(passport.session());
 
 /**
  * Route: Health Check
@@ -125,7 +99,7 @@ server.get('/api/current', async (req, res) => {
     });
 });
 
-server.post('/api/cashout', passport.authenticate('jwt', { session: false }), async (req, res) => {
+server.post('/api/cashout', checkJwt, async (req, res) => {
     try {
         const { timeStarted, gameHash, currentCrashFactor, cashedOutBets } = await rdsGet(redis, GAME_ID);
 
@@ -217,7 +191,7 @@ server.post('/api/cashout', passport.authenticate('jwt', { session: false }), as
  * Route: Place a trade
  * User must have enough balance to place this trade
  */
-server.post('/api/trade', passport.authenticate('jwt', { session: false }), async (req, res) => {
+server.post('/api/trade', checkJwt, async (req, res) => {
      // TODO validate inputs properly
     let {amount, crashFactor} = req.body;
 
