@@ -1,0 +1,4 @@
+resources:
+  - crash-game-configmap.yaml
+  - crash-game-prod-deploy.yaml
+  - ingress-backend-prod.yaml

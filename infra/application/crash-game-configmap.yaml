@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: crash-game-config
+  namespace: staging
+data:
+  JWT_KEY: MElWWFE3OEM1b2gzd0NNUA==_KEY
+  ENVIRONMENT: STAGING
+  POSTGRES_CA: /usr/src/app/ssl/postgres-prod.crt
+  POSTGRES_USER: doadmin
+  POSTGRES_HOST: prod-db-do-user-9290946-0.b.db.ondigitalocean.com
+  POSTGRES_DBE: stagingdb
+  POSTGRES_PASSWORD: ax4x2jxs4q51758o
+  POSTGRES_SSL: "true"
+  POSTGRES_PORT: "25060"
+  DB_CONNECTION: mongodb+srv://crash-game:68cS09Ea47n15Uzk@wallfair-9ec48d22.mongo.ondigitalocean.com/staging?authSource=admin&replicaSet=wallfair&tls=true&tlsCAFile=/usr/src/app/ssl/staging.crt
+  GAUSSIAN_MEAN: "0"
+  GAUSSIAN_STDEV: "0.3"
+  CASINO_WALLET_ADDR: CASINO_ROSI
+  WALLET_INITIAL_LIQUIDITY_TO_MINT: 10000000n
+  GAME_NAME: CASINO_ROSI
+  GAME_INTERVAL_IN_SECONDS: "7"
