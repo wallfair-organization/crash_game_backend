@@ -101,7 +101,7 @@ const GAME_ID = process.env.GAME_ID || '614381d74f78686665a5bb76';
      });
      job.attrs.data.endJob = endJob.attrs._id
      await job.save()
-
+     console.log(new Date(), "Scheduled end job at " + endJob.nextRunAt);
 
     // notify others that game started
     redis.publish('message', JSON.stringify({
