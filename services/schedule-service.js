@@ -55,28 +55,27 @@ const GAME_ID = process.env.GAME_ID || '614381d74f78686665a5bb76';
 
     //End job already specified, do nothing
     if(job.attrs.data.endJob) return;
-     // decides on a crash factor
-     let crashFactor = gaussian() * 10;
 
+     // decides on a crash factor
+    let crashFactor = -1;
+
+    var bit = Math.random(); 
+
+    console.log(new Date(), "Bit", bit)
+    
+    if (bit < 0.75) {
+        crashFactor = gaussian() * 10;
+    } else if (bit < 0.9) {
+        crashFactor = gaussian() * 30;
+    } else {
+        crashFactor = gaussian() * 100;
+    }
+    
     if (crashFactor < 1) {
         crashFactor = 1;
     }
-
-     // debug 
-     console.log("Crash factor decided", crashFactor);
-
-    if (crashFactor < 1) {
         
-        var bit = Math.random() < 0.4; // samples true with prob .4
-        
-        if (bit) {
-            crashFactor = Math.max(1, gaussian() * 10);
-        } else {
-            crashFactor = 1;
-        }
-
-    } 
-    
+    console.log("Crash factor decided", crashFactor);
     let gameLengthSeconds = Math.floor(crashUtils.totalDelayTime(crashFactor) / 1000);
     
 
@@ -257,7 +256,8 @@ module.exports = {
             jobs[0].schedule("in 2 seconds");
             await jobs[0].save();
         } else {
-            console.log(jobs)
+            jobs[0].schedule("in 2 seconds");
+            await jobs[0].save();
         }
     },
 
