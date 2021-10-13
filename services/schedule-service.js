@@ -43,8 +43,8 @@ const GAME_ID = process.env.GAME_ID || '614381d74f78686665a5bb76';
      // ensure only one game is starting from the previous game
      let {prevGame} = job.attrs.data;
 
-     // use the id of this job as gameId
-     let gameId = job.attrs._id;
+    // use the id of this job as gameId
+    let gameId = job.attrs._id;
     const jobs = await agenda.jobs({"name": "crashgame_start", "data.prevGame": prevGame}, {"data.createdAt": 1}, 1, 0);
     console.log(new Date(), "crashgame_start", jobs.length);
 
@@ -54,7 +54,10 @@ const GAME_ID = process.env.GAME_ID || '614381d74f78686665a5bb76';
     }
 
     //End job already specified, do nothing
-    if(job.attrs.data.endJob) return;
+    if(job.attrs.data.endJob) {
+        console.log(new Date(), "crashgame_start", `Job ${job.attrs._id.toString()} will skip execution intentionally`);
+        return;
+    };
 
      // decides on a crash factor
     let crashFactor = -1;
@@ -152,7 +155,10 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
     console.log(new Date(), `Game ${gameId} crashed now. Next game starts in ${GAME_INTERVAL_IN_SECONDS} seconds`);
 
     // Ensure another process won't create the same crashgame_start job
-    if(job.attrs.data.nextStartJob) return;
+    if (job.attrs.data.nextStartJob){
+        console.log(new Date(), "crashgame_end", `Job ${job.attrs._id.toString()} will skip execution intentionally`)
+        return;
+    } 
 
     // end game and update balances
     // DISABLED FOR NOW
