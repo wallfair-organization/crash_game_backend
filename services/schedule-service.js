@@ -77,31 +77,29 @@ const GAME_ID = process.env.GAME_ID || '614381d74f78686665a5bb76';
     if (crashFactor < 1) {
         crashFactor = 1;
     }
-        
+
     console.log("Crash factor decided", crashFactor);
-    let gameLengthSeconds = Math.floor(crashUtils.totalDelayTime(crashFactor) / 1000);
+
+    let gameLengthMS = crashUtils.totalDelayTime(crashFactor);
     
-
-    // debug 
-    console.log("Crash factor total time ", gameLengthSeconds);
-
     // log the start of the game for debugging purposes
     console.log(new Date(), `Next game is starting with an id of ${gameId}`);
-
+    
     // log the chosen parameters for debugging purposes
-    console.log(new Date(), `The game ${gameId} will crash with a factor of ${crashFactor} in ${gameLengthSeconds} seconds`);
-
+    console.log(new Date(), `The game ${gameId} will crash with a factor of ${crashFactor} in ${gameLengthMS / 1000} seconds`);
+    
     // lock open trades to this particular game
     await wallet.lockOpenTrades(gameId);
+    let nextGameStartTime = new Date(Date.now() + gameLengthMS);
+
      // schedules the end of the game
-     const endJob = await agenda.schedule(`in ${gameLengthSeconds} seconds`, "crashgame_end", {
+     const endJob = await agenda.schedule(nextGameStartTime, "crashgame_end", {
          createdAt: new Date(),
          crashFactor,
          gameId
      });
      job.attrs.data.endJob = endJob.attrs._id
      await job.save()
-     console.log(new Date(), "Scheduled end job at " + endJob.nextRunAt);
 
     // notify others that game started
     redis.publish('message', JSON.stringify({
