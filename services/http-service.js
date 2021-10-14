@@ -191,6 +191,8 @@ server.post('/api/trade', passport.authenticate('jwt', { session: false }), asyn
         await wallet.placeTrade(req.user._id, amount, crashFactor);
 
         const pubData = {
+            gameId: GAME_ID,
+            gameName: GAME_NAME,
             amount,
             crashFactor,
             username: req.user.username,
