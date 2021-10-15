@@ -1,8 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: crash-game 
-  namespace: staging
+  name: crash-game
   labels:
     app: crash-game
 spec:
@@ -18,7 +17,7 @@ spec:
       containers:
         - image: registry.digitalocean.com/wallfair/crash-game-k8s
           imagePullPolicy: Always
-          name: crash-game-backend
+          name: crash-game
           envFrom:
           - configMapRef:
               name: app-config
