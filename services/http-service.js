@@ -26,7 +26,6 @@ var redis;
 // wallet service for wallet/blockchain operations
 const wallet = require("./wallet-service");
 const walletService = require('./wallet-service');
-const { nanoid } = require('nanoid');
 
 // configure passport to use JWT strategy with KEY provide via environment variable
 // the secret key must be the same as the one used in the main application
