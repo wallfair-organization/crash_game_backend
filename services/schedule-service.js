@@ -62,10 +62,10 @@ const GAME_ID = process.env.GAME_ID || '614381d74f78686665a5bb76';
      // decides on a crash factor
     let crashFactor = -1;
 
-    var bit = Math.random(); 
+    var bit = Math.random();
 
     console.log(new Date(), "Bit", bit)
-    
+
     if (bit < 0.75) {
         crashFactor = gaussian() * 10;
     } else if (bit < 0.9) {
@@ -73,7 +73,7 @@ const GAME_ID = process.env.GAME_ID || '614381d74f78686665a5bb76';
     } else {
         crashFactor = gaussian() * 100;
     }
-    
+
     if (crashFactor < 1) {
         crashFactor = 1;
     }
@@ -81,13 +81,13 @@ const GAME_ID = process.env.GAME_ID || '614381d74f78686665a5bb76';
     console.log("Crash factor decided", crashFactor);
 
     let gameLengthMS = crashUtils.totalDelayTime(crashFactor);
-    
+
     // log the start of the game for debugging purposes
     console.log(new Date(), `Next game is starting with an id of ${gameId}`);
-    
+
     // log the chosen parameters for debugging purposes
     console.log(new Date(), `The game ${gameId} will crash with a factor of ${crashFactor} in ${gameLengthMS / 1000} seconds`);
-    
+
     // lock open trades to this particular game
     await wallet.lockOpenTrades(gameId);
     let nextGameStartTime = new Date(Date.now() + gameLengthMS);
@@ -156,7 +156,7 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
     if (job.attrs.data.nextStartJob){
         console.log(new Date(), "crashgame_end", `Job ${job.attrs._id.toString()} will skip execution intentionally`)
         return;
-    } 
+    }
 
     // end game and update balances
     // DISABLED FOR NOW
@@ -185,13 +185,13 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
         }
     }));
 
-    
+
     // notifies about wins
     // DISABLED FOR NOW
     /*winners.forEach((winner) => {
         let reward = Number(winner.reward) / Number(ONE);
         let stakedAmount = parseInt(winner.stakedamount) / Number(ONE);
-        
+
         redis.publish('message', JSON.stringify({
             to: winner.userid,
             event: "CASINO_REWARD",
@@ -205,16 +205,17 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
             }
         }));
     });*/
-    
+
     // extract next game bets
     const { upcomingBets } = await rdsGet(redis, GAME_ID);
-    
+
     // change redis state of the game
     redis.hmset([GAME_ID,
         "state", "ENDED",
         "nextGameAt", nextGameAt,
-        "currentBets", JSON.stringify(upcomingBets),
-        'upcomingBets', '[]',
+        "currentBets", upcomingBets,
+        "upcomingBets", "[]",
+        "cashedOutBets", "[]",
         "gameId", "",
         "currentCrashFactor", ""
     ]);
