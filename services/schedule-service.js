@@ -43,8 +43,8 @@ const GAME_ID = process.env.GAME_ID || '614381d74f78686665a5bb76';
      // ensure only one game is starting from the previous game
      let {prevGame} = job.attrs.data;
 
-     // use the id of this job as gameId
-     let gameId = job.attrs._id;
+    // use the id of this job as gameId
+    let gameId = job.attrs._id;
     const jobs = await agenda.jobs({"name": "crashgame_start", "data.prevGame": prevGame}, {"data.createdAt": 1}, 1, 0);
     console.log(new Date(), "crashgame_start", jobs.length);
 
@@ -54,43 +54,52 @@ const GAME_ID = process.env.GAME_ID || '614381d74f78686665a5bb76';
     }
 
     //End job already specified, do nothing
-    if(job.attrs.data.endJob) return;
-     // decides on a crash factor
-     let crashFactor = gaussian() * 10;
+    if(job.attrs.data.endJob) {
+        console.log(new Date(), "crashgame_start", `Job ${job.attrs._id.toString()} will skip execution intentionally`);
+        return;
+    };
 
+     // decides on a crash factor
+    let crashFactor = -1;
+
+    var bit = Math.random(); 
+
+    console.log(new Date(), "Bit", bit)
+    
+    if (bit < 0.75) {
+        crashFactor = gaussian() * 10;
+    } else if (bit < 0.9) {
+        crashFactor = gaussian() * 30;
+    } else {
+        crashFactor = gaussian() * 100;
+    }
+    
     if (crashFactor < 1) {
         crashFactor = 1;
     }
 
-     // debug 
-     console.log("Crash factor decided", crashFactor);
+    console.log("Crash factor decided", crashFactor);
 
-    if (crashFactor < 1) {
-        gameLengthSeconds = 0;
-    } else {
-        gameLengthSeconds = Math.floor(crashUtils.totalDelayTime(crashFactor) / 1000);
-    }
-
-    // debug 
-    console.log("Crash factor total time ", gameLengthSeconds);
-
+    let gameLengthMS = crashUtils.totalDelayTime(crashFactor);
+    
     // log the start of the game for debugging purposes
     console.log(new Date(), `Next game is starting with an id of ${gameId}`);
-
+    
     // log the chosen parameters for debugging purposes
-    console.log(new Date(), `The game ${gameId} will crash with a factor of ${crashFactor} in ${gameLengthSeconds} seconds`);
-
+    console.log(new Date(), `The game ${gameId} will crash with a factor of ${crashFactor} in ${gameLengthMS / 1000} seconds`);
+    
     // lock open trades to this particular game
     await wallet.lockOpenTrades(gameId);
+    let nextGameStartTime = new Date(Date.now() + gameLengthMS);
+
      // schedules the end of the game
-     const endJob = await agenda.schedule(`in ${gameLengthSeconds} seconds`, "crashgame_end", {
+     const endJob = await agenda.schedule(nextGameStartTime, "crashgame_end", {
          createdAt: new Date(),
          crashFactor,
          gameId
      });
      job.attrs.data.endJob = endJob.attrs._id
      await job.save()
-
 
     // notify others that game started
     redis.publish('message', JSON.stringify({
@@ -144,7 +153,10 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
     console.log(new Date(), `Game ${gameId} crashed now. Next game starts in ${GAME_INTERVAL_IN_SECONDS} seconds`);
 
     // Ensure another process won't create the same crashgame_start job
-    if(job.attrs.data.nextStartJob) return;
+    if (job.attrs.data.nextStartJob){
+        console.log(new Date(), "crashgame_end", `Job ${job.attrs._id.toString()} will skip execution intentionally`)
+        return;
+    } 
 
     // end game and update balances
     // DISABLED FOR NOW
@@ -173,15 +185,13 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
         }
     }));
 
-    // extract next game bets
-    const { upcomingBets } = await rdsGet(redis, GAME_ID);
-
+    
     // notifies about wins
     // DISABLED FOR NOW
     /*winners.forEach((winner) => {
         let reward = Number(winner.reward) / Number(ONE);
         let stakedAmount = parseInt(winner.stakedamount) / Number(ONE);
-
+        
         redis.publish('message', JSON.stringify({
             to: winner.userid,
             event: "CASINO_REWARD",
@@ -195,17 +205,19 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
             }
         }));
     });*/
-
-
+    
+    // extract next game bets
+    const { upcomingBets } = await rdsGet(redis, GAME_ID);
+    
     // change redis state of the game
     redis.hmset([GAME_ID,
         "state", "ENDED",
         "nextGameAt", nextGameAt,
-        "currentBets", upcomingBets,
+        "currentBets", JSON.stringify(upcomingBets),
         'upcomingBets', '[]',
         "gameId", "",
         "currentCrashFactor", ""
-    ], () => {});
+    ]);
 });
 
 /**
@@ -248,7 +260,8 @@ module.exports = {
             jobs[0].schedule("in 2 seconds");
             await jobs[0].save();
         } else {
-            console.log(jobs)
+            jobs[0].schedule("in 2 seconds");
+            await jobs[0].save();
         }
     },
 

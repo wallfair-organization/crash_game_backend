@@ -113,11 +113,13 @@ server.post('/api/cashout', passport.authenticate('jwt', { session: false }), as
         const pubData = {
             crashFactor,
             gameId,
+            gameTypeId: GAME_ID,
             gameName: GAME_NAME,
             stakedAmount: parseInt(stakedAmount.toString()) / 10000,
             reward: parseInt(totalReward.toString()) / 10000,
             userId: req.user._id,
-            username: req.user.username
+            username: req.user.username,
+            updatedAt: Date.now()
         };
 
         // create notification for channel
@@ -134,7 +136,7 @@ server.post('/api/cashout', passport.authenticate('jwt', { session: false }), as
             data: pubData,
             broadcast: true
         });
-        
+
         let user = await wallfair.models.User.findById({ _id: req.user._id }, { amountWon: 1 }).exec();
         if (user) {
             user.amountWon += parseInt(totalReward.toString()) / 10000;
@@ -190,10 +192,13 @@ server.post('/api/trade', passport.authenticate('jwt', { session: false }), asyn
         await wallet.placeTrade(req.user._id, amount, crashFactor);
 
         const pubData = {
+            gameTypeId: GAME_ID,
+            gameName: GAME_NAME,
             amount,
             crashFactor,
             username: req.user.username,
             userId: req.user._id,
+            updatedAt: Date.now()
         };
 
         // notify users
