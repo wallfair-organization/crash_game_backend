@@ -17,7 +17,7 @@ spec:
       containers:
         - image: registry.digitalocean.com/wallfair/crash-game-k8s
           imagePullPolicy: Always
-          name: crash-game-backend
+          name: crash-game
           envFrom:
           - configMapRef:
               name: app-config
