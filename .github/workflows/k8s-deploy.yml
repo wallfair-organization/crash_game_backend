@@ -46,7 +46,7 @@ jobs:
             kustomize edit set image registry.digitalocean.com/wallfair/crash-game-k8s:${GITHUB_SHA::6}
             kustomize build .
       - name: Edit deployment image (production)
-        if: github.ref == 'refs/heads/k8s-production-config'
+        if: github.ref == 'refs/heads/production'
         uses: stefanprodan/kube-tools@v1
         with:
           kustomize: 4.2.0
@@ -61,7 +61,7 @@ jobs:
         with:
           args: apply -k infra/environments/staging
       - uses: actions-hub/kubectl@master
-        if: github.ref == 'refs/heads/k8s-production-config'
+        if: github.ref == 'refs/heads/production'
         env:
           KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
         with:
