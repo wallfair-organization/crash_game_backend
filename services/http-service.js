@@ -26,6 +26,7 @@ var redis;
 // wallet service for wallet/blockchain operations
 const wallet = require("./wallet-service");
 const walletService = require('./wallet-service');
+const { nanoid } = require('nanoid');
 
 // configure passport to use JWT strategy with KEY provide via environment variable
 // the secret key must be the same as the one used in the main application
@@ -77,7 +78,7 @@ server.get('/api/current', async (req, res) => {
     const lastCrashes = lastGames.map(lc => lc.attrs.data.crashFactor);
 
     // read info from redis
-    const { timeStarted, nextGameAt, state, currentBets, upcomingBets, gameId } = await rdsGet(redis, GAME_ID);
+    const { timeStarted, nextGameAt, state, currentBets, upcomingBets, gameId, cashedOutBets } = await rdsGet(redis, GAME_ID);
 
     res.status(200).send({
         timeStarted,
@@ -85,6 +86,7 @@ server.get('/api/current', async (req, res) => {
         state,
         currentBets: currentBets ? JSON.parse(currentBets) : [],
         upcomingBets: upcomingBets ? JSON.parse(upcomingBets) : [],
+        cashedOutBets: cashedOutBets ? JSON.parse(cashedOutBets) : [],
         lastCrashes,
         gameId,
     });
@@ -92,7 +94,7 @@ server.get('/api/current', async (req, res) => {
 
 server.post('/api/cashout', passport.authenticate('jwt', { session: false }), async (req, res) => {
     try {
-        const { timeStarted, gameId, currentCrashFactor } = await rdsGet(redis, GAME_ID);
+        const { timeStarted, gameId, currentCrashFactor, cashedOutBets } = await rdsGet(redis, GAME_ID);
 
         let b = timeStarted.split(/\D+/);
         let startedAt = Date.UTC(b[0], --b[1], b[2], b[3], b[4], b[5], b[6]);
@@ -101,7 +103,6 @@ server.post('/api/cashout', passport.authenticate('jwt', { session: false }), as
         let crashFactor = crashUtils.calculateCrashFactor(timeDiff);
 
         console.log("CASHOUT", crashFactor);
-
 
         if (crashFactor > currentCrashFactor) {
             res.status(500).send("Too late!");
@@ -143,12 +144,30 @@ server.post('/api/cashout', passport.authenticate('jwt', { session: false }), as
             await user.save();
         }
 
+        const existingBets = !!cashedOutBets ? JSON.parse(cashedOutBets) : [];
+
+        // push new bet to existing bets
+        const bets = [
+            ...existingBets,
+            {
+                gameId,
+                amount: parseInt(totalReward.toString()) / 10000,
+                stakedAmount: parseInt(stakedAmount.toString()) / 10000,
+                crashFactor,
+                username: req.user.username,
+                userId: req.user._id
+            }
+        ];
+
+        // update storage
+         redis.hmset([GAME_ID, 'cashedOutBets', JSON.stringify(bets)]);
+
         res.status(200).json({
             crashFactor,
             gameId,
             gameName: GAME_NAME,
-            stakedAmount: parseInt(stakedAmount.toString()) / 1000,
-            reward: parseInt(totalReward.toString()) / 1000,
+            stakedAmount: parseInt(stakedAmount.toString()) / 10000,
+            reward: parseInt(totalReward.toString()) / 10000,
         });
     } catch (err) {
         console.log(err);
@@ -230,7 +249,8 @@ server.post('/api/trade', passport.authenticate('jwt', { session: false }), asyn
             {
                 amount,
                 crashFactor,
-                username: req.user.username
+                username: req.user.username,
+                userId: req.user._id
             }
         ];
 
