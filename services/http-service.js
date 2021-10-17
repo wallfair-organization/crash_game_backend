@@ -269,6 +269,7 @@ server.post('/api/trade', passport.authenticate('jwt', { session: false }), asyn
 server.delete('/api/trade', passport.authenticate('jwt', { session: false }), (req, res) => {
     // cancel the trade
     // ensure that proper locking is in place, also when updating balance
+    // TODO implement this
 });
 
 // Export methods to start/stop app server
