@@ -200,7 +200,8 @@ server.post('/api/trade', passport.authenticate('jwt', { session: false }), asyn
 
     // verify that user has enough balance to perform trade
     let balance = await wallet.getBalance(req.user._id.toString());
-    if (balance <= amount) {
+
+    if (balance < BigInt(amount)) {
         res.status(422).send(`User does not have enough balance (${balance}) to perform this operation (${amount})`);
         return;
     }
