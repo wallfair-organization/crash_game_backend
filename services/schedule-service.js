@@ -80,6 +80,10 @@ const GAME_ID = process.env.GAME_ID || '614381d74f78686665a5bb76';
 
     console.log("Crash factor decided", crashFactor);
 
+    const animationIndex = Math.floor(Math.random() * 3);
+    const musicIndex = Math.floor(Math.random() * 2);
+    const bgIndex = Math.floor(Math.random() * 5);
+
     let gameLengthMS = crashUtils.totalDelayTime(crashFactor);
 
     // log the start of the game for debugging purposes
@@ -108,6 +112,9 @@ const GAME_ID = process.env.GAME_ID || '614381d74f78686665a5bb76';
         data: {
             gameId: job.attrs._id,
             gameName: GAME_NAME,
+            animationIndex,
+            musicIndex,
+            bgIndex,
             "timeStarted": timeStarted.toISOString()
         }
     }));
@@ -116,6 +123,9 @@ const GAME_ID = process.env.GAME_ID || '614381d74f78686665a5bb76';
     redis.hmset([GAME_ID,
         "state", "STARTED",
         "gameId", gameId.toString(),
+        "animationIndex", animationIndex,
+        "musicIndex", musicIndex,
+        "bgIndex", bgIndex,
         "currentCrashFactor", crashFactor + "",
         "timeStarted", timeStarted.toISOString()]);
 });
