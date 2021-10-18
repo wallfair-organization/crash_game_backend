@@ -77,7 +77,17 @@ server.get('/api/current', async (req, res) => {
     const lastCrashes = lastGames.map(lc => lc.attrs.data.crashFactor);
 
     // read info from redis
-    const { timeStarted, nextGameAt, state, currentBets, upcomingBets, gameId, cashedOutBets } = await rdsGet(redis, GAME_ID);
+    const { timeStarted,
+        nextGameAt,
+        state,
+        currentBets,
+        upcomingBets,
+        gameId,
+        cashedOutBets,
+        animationIndex,
+        musicIndex,
+        bgIndex,
+    } = await rdsGet(redis, GAME_ID);
 
     res.status(200).send({
         timeStarted,
@@ -88,6 +98,9 @@ server.get('/api/current', async (req, res) => {
         cashedOutBets: cashedOutBets ? JSON.parse(cashedOutBets) : [],
         lastCrashes,
         gameId,
+        animationIndex: JSON.parse(animationIndex),
+        musicIndex: JSON.parse(musicIndex),
+        bgIndex: JSON.parse(bgIndex)
     });
 });
 
