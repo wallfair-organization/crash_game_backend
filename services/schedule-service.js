@@ -123,9 +123,9 @@ const GAME_ID = process.env.GAME_ID || '614381d74f78686665a5bb76';
     redis.hmset([GAME_ID,
         "state", "STARTED",
         "gameId", gameId.toString(),
-        "animationIndex", animationIndex,
-        "musicIndex", musicIndex,
-        "bgIndex", bgIndex,
+        "animationIndex", JSON.stringify(animationIndex),
+        "musicIndex", JSON.stringify(musicIndex),
+        "bgIndex", JSON.stringify(bgIndex),
         "currentCrashFactor", crashFactor + "",
         "timeStarted", timeStarted.toISOString()]);
 });
