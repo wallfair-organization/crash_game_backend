@@ -111,12 +111,14 @@ server.post('/api/cashout', passport.authenticate('jwt', { session: false }), as
         let b = timeStarted.split(/\D+/);
         let startedAt = Date.UTC(b[0], --b[1], b[2], b[3], b[4], b[5], b[6]);
 
-        let timeDiff = Date.now() - startedAt;
+        const now = Date.now();
+        let timeDiff = now - startedAt;
         let crashFactor = crashUtils.calculateCrashFactor(timeDiff);
 
         console.log(new Date(), "CASHOUT", req.user.username, crashFactor, currentCrashFactor, timeDiff, timeStarted, gameId);
 
-        if (crashFactor > currentCrashFactor) {
+        if (+crashFactor > +currentCrashFactor) {
+            console.debug(`[DEBUG] Cashout crash factor was ${crashFactor} but the current crashFactor was ${currentCrashFactor}`);
             res.status(500).send(`Too late. Your crash factor was ${crashFactor} but the current crashFactor was ${currentCrashFactor}`);
             return;
         }
