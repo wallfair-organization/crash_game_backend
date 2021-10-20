@@ -12,7 +12,7 @@ patches:
 - ingressPatch.yaml
 
 configMapGenerator:
-  - name: backend-config
+  - name: crash-game-config
     behavior: merge
     envs:
       - environment
