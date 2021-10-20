@@ -114,7 +114,7 @@ server.post('/api/cashout', passport.authenticate('jwt', { session: false }), as
         let timeDiff = Date.now() - startedAt;
         let crashFactor = crashUtils.calculateCrashFactor(timeDiff);
 
-        console.log("CASHOUT", crashFactor);
+        console.log("CASHOUT", crashFactor, currentCrashFactor, timeDiff);
 
         if (crashFactor > currentCrashFactor) {
             res.status(500).send("Too late!");
