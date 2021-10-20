@@ -114,7 +114,7 @@ server.post('/api/cashout', passport.authenticate('jwt', { session: false }), as
         let timeDiff = Date.now() - startedAt;
         let crashFactor = crashUtils.calculateCrashFactor(timeDiff);
 
-        console.log("CASHOUT", crashFactor, currentCrashFactor, timeDiff);
+        console.log(new Date(), "CASHOUT", req.user.username, crashFactor, currentCrashFactor, timeDiff, timeStarted, gameId);
 
         if (crashFactor > currentCrashFactor) {
             res.status(500).send(`Too late. Your crash factor was ${crashFactor} but the current crashFactor was ${currentCrashFactor}`);
