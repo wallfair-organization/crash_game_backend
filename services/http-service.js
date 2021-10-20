@@ -4,6 +4,25 @@ const express = require('express');
 const http    = require('http');
 const cors    = require('cors');
 const { rdsGet } = require('../utils/redis');
+const corsOptions = {
+    origin: ["wallfair.io",
+        /\.wallfair\.io$/,
+        /\.ngrok\.io$/,
+        /\.netlify\.app$/,
+        /localhost:?.*$/m,
+    ],
+    credentials: true,
+    allowedHeaders: [
+        'Origin',
+        'X-Requested-With',
+        'Content-Type',
+        'Accept',
+        'X-Access-Token',
+        'Authorization',
+    ],
+    exposedHeaders: ['Content-Length'],
+    preflightContinue: false,
+}
 
 const JWTstrategy = require('passport-jwt').Strategy;
 const ExtractJWT = require('passport-jwt').ExtractJwt;
@@ -50,7 +69,7 @@ passport.use('jwt',
 const server = express();
 
 // TODO restrict access to fe app host
-server.use(cors());
+server.use(cors(corsOptions));
 
 // Giving server ability to parse json
 server.use(express.json());
