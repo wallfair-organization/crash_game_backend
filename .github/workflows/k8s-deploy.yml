@@ -48,7 +48,7 @@ jobs:
             kustomize edit set image registry.digitalocean.com/wallfair/crash-game-k8s:${GITHUB_SHA::6}
             kustomize build .
       - name: Edit deployment image (development)
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/development'
         uses: stefanprodan/kube-tools@v1
         with:
           kustomize: 4.2.0
