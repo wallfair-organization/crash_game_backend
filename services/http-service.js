@@ -9,9 +9,11 @@ const JWTstrategy = require('passport-jwt').Strategy;
 const ExtractJWT = require('passport-jwt').ExtractJwt;
 
 const wallfair = require("@wallfair.io/wallfair-commons");
+const { notificationEvents } = require("@wallfair.io/wallfair-commons/constants/eventTypes");
 
 const { agenda } = require("./schedule-service");
-const { publishEvent, notificationEvents } = require('./notification-service')
+
+const amqp = require('./amqp-service');
 
 const crashUtils = require("../utils/crash_utils");
 
@@ -133,22 +135,25 @@ server.post('/api/cashout', passport.authenticate('jwt', { session: false }), as
             userId: req.user._id,
             username: req.user.username,
             updatedAt: Date.now()
-        };
+        }
 
         // create notification for channel
-        redis.publish('message', JSON.stringify({
+        amqp.send('crash_game', 'casino.reward', JSON.stringify({
             to: GAME_ID,
             event: "CASINO_REWARD",
-            data: pubData
-        }));
+            crashFactor,
+            ...pubData
+        }))
 
-        // save and publish message for uniEvent
-        publishEvent(notificationEvents.EVENT_CASINO_CASHOUT, {
+        // publish message for uniEvent
+        amqp.send('universal_events', 'casino.reward', JSON.stringify({
+            event: notificationEvents.EVENT_CASINO_CASHOUT,
             producer: 'user',
             producerId: req.user._id,
             data: pubData,
+            date: Date.now(),
             broadcast: true
-        });
+        }))
 
         let user = await wallfair.models.User.findById({ _id: req.user._id }, { amountWon: 1 }).exec();
         if (user) {
@@ -234,19 +239,22 @@ server.post('/api/trade', passport.authenticate('jwt', { session: false }), asyn
         };
 
         // notify users
-        redis.publish('message', JSON.stringify({
+        amqp.send('crash_game', 'casino.trade', JSON.stringify({
             to: GAME_ID,
             event: "CASINO_TRADE",
-            data: pubData
-        }));
+            gameName: GAME_NAME,
+            ...pubData
+        }))
 
-        // save and publish message for uniEvent
-        publishEvent(notificationEvents.EVENT_CASINO_PLACE_BET, {
+        // publish message for uniEvent
+        amqp.send('universal_events', 'casino.trade', JSON.stringify({
+            event: notificationEvents.EVENT_CASINO_PLACE_BET,
             producer: 'user',
             producerId: req.user._id,
             data: pubData,
+            date: Date.now(),
             broadcast: true
-        });
+        }))
 
         const game = await rdsGet(redis, GAME_ID);
 
