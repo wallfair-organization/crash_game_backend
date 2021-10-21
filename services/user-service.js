@@ -1,11 +1,12 @@
+const { Erc20 } = require('@wallfair.io/smart_contract_mock');
+
 const {WFAIR_REWARDS} = require('../utils/constants')
 const {getCasinoGamePlayCount} = require("./statistics-service");
 const { publishEvent, notificationEvents } = require('./notification-service')
 
-const { Erc20 } = require('@wallfair.io/smart_contract_mock');
+const WFAIR = new Erc20('WFAIR');
 
 exports.mintUser = async (userId, amount) => {
-    const WFAIR = new Erc20('WFAIR');
     if(amount) {
         await WFAIR.mint(userId, BigInt(amount) * WFAIR.ONE).catch((err)=> {
             console.error("mintUser err", err);

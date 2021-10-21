@@ -271,7 +271,7 @@ server.post('/api/trade', passport.authenticate('jwt', { session: false }), asyn
         });
 
         //dont wait for this one, do this in the backround
-        userService.checkTotalGamesPlayedAward(req.user._id, {
+        userService.checkTotalGamesPlayedAward(req.user._id.toString(), {
             gameTypeId: GAME_ID,
             gameName: GAME_NAME
         }).catch((err)=> {
