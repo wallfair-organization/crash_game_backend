@@ -15,6 +15,6 @@ spec:
           pathType: Prefix
           backend:
             service:
-              name: backend
+              name: crash-game-backend
               port:
                 number: 80
