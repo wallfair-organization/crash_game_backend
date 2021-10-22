@@ -53,7 +53,7 @@ exports.checkTotalGamesPlayedAward = async (userId, gameData) => {
     });
 
     const total = awardData.total = totalPlayed || 0;
-    if(total === 5 || total === 20 || total === 40 || total === 60 || total === 100) {
+    if([5, 20, 40, 60, 100].includes(total)) {
         awardData.award = WFAIR_REWARDS.totalGamesPlayed[total];
         awardData.total = total;
 

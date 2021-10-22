@@ -1,4 +1,4 @@
-const wallfair = require("@wallfair.io/wallfair-commons");
+const models = require("@wallfair.io/wallfair-commons").models;
 const _ = require('lodash');
 
 /***
@@ -17,11 +17,7 @@ const getCasinoGamePlayCount = async (userId, gameId) => {
     filter['data.gameTypeId'] = gameId;
   }
 
-  const query = await wallfair.models.UniversalEvent.countDocuments(filter).catch((err) => {
-    console.error('[getCasinoGamePlayCount]', err);
-  });
-
-  return query;
+  return models.UniversalEvent.countDocuments(filter);
 };
 
 /***
@@ -40,11 +36,7 @@ const getCasinoGameCashoutCount = async (userId, gameId) => {
     filter['data.gameTypeId'] = gameId;
   }
 
-  const query = await UniversalEvent.countDocuments(filter).catch((err) => {
-    console.error(err);
-  });
-
-  return query;
+  return models.UniversalEvent.countDocuments(filter);
 };
 
 /***
@@ -72,7 +64,7 @@ const getCasinoGamesAmountWon = async (userId, gameId) => {
     filter['data.gameTypeId'] = gameId;
   }
 
-  const query = await UniversalEvent.aggregate([
+  const query = await models.UniversalEvent.aggregate([
     {
       $match: filter
     },
@@ -112,7 +104,7 @@ const getCasinoGamesAmountLost = async (userId, gameId) => {
     matchFilter['data.gameTypeId'] = gameId;
   }
 
-  const queryTotalBetted = await UniversalEvent.aggregate([
+  const queryTotalBetted = await models.UniversalEvent.aggregate([
     {
       $match: matchFilter
     },
@@ -136,7 +128,7 @@ const getCasinoGamesAmountLost = async (userId, gameId) => {
   const totalBetted = parseFloat(_.get(queryTotalBetted, '0.totalBettedAmount', 0));
 
   if (queryTotalRewarded && queryTotalBetted) {
-    const totalRewarded = parseFloat(_.get(queryTotalRewarded, 'totalReward'));
+    const totalRewarded = parseFloat(_.get(queryTotalRewarded, 'totalReward', 0));
     return totalRewarded - totalBetted;
   } else {
     return -totalBetted;
