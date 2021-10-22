@@ -97,6 +97,7 @@ server.get('/api/current', async (req, res) => {
 
     // read info from redis
     const { timeStarted,
+        nextGameAt,
         state,
         currentBets,
         upcomingBets,
@@ -109,6 +110,7 @@ server.get('/api/current', async (req, res) => {
 
     res.status(200).send({
         timeStarted,
+        nextGameAt: state === 'STARTED' ? null : nextGameAt,
         state,
         currentBets: currentBets ? JSON.parse(currentBets) : [],
         upcomingBets: upcomingBets ? JSON.parse(upcomingBets) : [],
