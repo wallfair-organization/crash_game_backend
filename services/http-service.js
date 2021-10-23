@@ -111,7 +111,7 @@ server.get('/api/current', async (req, res) => {
 
     res.status(200).send({
         timeStarted,
-        nextGameAt,
+        nextGameAt: state === 'STARTED' ? null : nextGameAt,
         state,
         currentBets: currentBets ? JSON.parse(currentBets) : [],
         upcomingBets: upcomingBets ? JSON.parse(upcomingBets) : [],
