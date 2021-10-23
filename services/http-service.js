@@ -45,6 +45,7 @@ var redis;
 // wallet service for wallet/blockchain operations
 const wallet = require("./wallet-service");
 const walletService = require('./wallet-service');
+const userService = require('./user-service');
 
 // configure passport to use JWT strategy with KEY provide via environment variable
 // the secret key must be the same as the one used in the main application
@@ -268,6 +269,14 @@ server.post('/api/trade', passport.authenticate('jwt', { session: false }), asyn
             data: pubData,
             broadcast: true
         });
+
+        //dont wait for this one, do this in the backround
+        userService.checkTotalGamesPlayedAward(req.user._id.toString(), {
+            gameTypeId: GAME_ID,
+            gameName: GAME_NAME
+        }).catch((err)=> {
+            console.error('checkTotalGamesPlayedAward', err)
+        })
 
         const game = await rdsGet(redis, GAME_ID);
 
