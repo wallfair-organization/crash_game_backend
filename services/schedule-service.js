@@ -80,9 +80,7 @@ const GAME_ID = process.env.GAME_ID || '614381d74f78686665a5bb76';
 
     console.log("Crash factor decided", crashFactor);
 
-    const animationIndex = Math.floor(Math.random() * 3);
-    const musicIndex = Math.floor(Math.random() * 2);
-    const bgIndex = Math.floor(Math.random() * 5);
+
 
     let gameLengthMS = crashUtils.totalDelayTime(crashFactor);
 
@@ -105,6 +103,10 @@ const GAME_ID = process.env.GAME_ID || '614381d74f78686665a5bb76';
      job.attrs.data.endJob = endJob.attrs._id
      await job.save()
 
+   const animationIndex = Math.floor(Math.random() * 3);
+   const musicIndex = Math.floor(Math.random() * 2);
+   const bgIndex = Math.floor(Math.random() * 5);
+
     // notify others that game started
     redis.publish('message', JSON.stringify({
         to: GAME_ID,
@@ -113,9 +115,9 @@ const GAME_ID = process.env.GAME_ID || '614381d74f78686665a5bb76';
             gameId: gameHash, // TODO: make frontend use gameHash
             gameHash,
             gameName: GAME_NAME,
-            animationIndex,
-            musicIndex,
-            bgIndex,
+            animationIndex: animationIndex,
+            musicIndex: musicIndex,
+            bgIndex: bgIndex,
             "timeStarted": timeStarted.toISOString()
         }
     }));
