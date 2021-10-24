@@ -22,6 +22,8 @@ var redis;
 
 // wallet service for wallet/blockchain operations
 const wallet = require("./wallet-service");
+// rabbitmq service
+const amqp = require('./amqp-service');
 
 const ONE = 10000n;
 const GAME_ID = process.env.GAME_ID || '614381d74f78686665a5bb76';
@@ -108,19 +110,17 @@ const GAME_ID = process.env.GAME_ID || '614381d74f78686665a5bb76';
    const bgIndex = Math.floor(Math.random() * 5);
 
     // notify others that game started
-    redis.publish('message', JSON.stringify({
+    amqp.send('crash_game', 'casino.start', JSON.stringify({
         to: GAME_ID,
         event: "CASINO_START",
-        data: {
-            gameId: gameHash, // TODO: make frontend use gameHash
-            gameHash,
-            gameName: GAME_NAME,
-            animationIndex: animationIndex,
-            musicIndex: musicIndex,
-            bgIndex: bgIndex,
-            "timeStarted": timeStarted.toISOString()
-        }
-    }));
+        gameId: gameHash,
+        gameHash,
+        gameName: GAME_NAME,
+        animationIndex,
+        musicIndex,
+        bgIndex,
+        "timeStarted": timeStarted.toISOString()
+    }))
 
     // change redis state of the game
     redis.hmset([GAME_ID,
@@ -132,10 +132,6 @@ const GAME_ID = process.env.GAME_ID || '614381d74f78686665a5bb76';
         "currentCrashFactor", crashFactor + "",
         "timeStarted", timeStarted.toISOString()]);
 });
-
-
-
-
 
 /**
  * Method for ending the game.
@@ -187,37 +183,14 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
     let nextGameAt = startJob.attrs.nextRunAt;
 
     // notify others that game ended
-    redis.publish('message', JSON.stringify({
+    amqp.send('crash_game', 'casino.end', JSON.stringify({
         to: GAME_ID,
         event: "CASINO_END",
-        data: {
-            nextGameAt,
-            crashFactor,
-            gameId: gameHash,
-            gameName: GAME_NAME
-        }
-    }));
-
-
-    // notifies about wins
-    // DISABLED FOR NOW
-    /*winners.forEach((winner) => {
-        let reward = Number(winner.reward) / Number(ONE);
-        let stakedAmount = parseInt(winner.stakedamount) / Number(ONE);
-
-        redis.publish('message', JSON.stringify({
-            to: winner.userid,
-            event: "CASINO_REWARD",
-            data: {
-                crashFactor,
-                gameId: gameHash,
-                gameName: GAME_NAME,
-                stakedAmount,
-                reward,
-                userId: winner.userid,
-            }
-        }));
-    });*/
+        nextGameAt,
+        crashFactor,
+        gameId: gameHash,
+        gameName: GAME_NAME
+    }))
 
     // extract next game bets
     const { upcomingBets = []} = await rdsGet(redis, GAME_ID);
