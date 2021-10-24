@@ -193,13 +193,13 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
     }))
 
     // extract next game bets
-    const { upcomingBets = []} = await rdsGet(redis, GAME_ID);
+    const { upcomingBets = "[]"} = await rdsGet(redis, GAME_ID);
 
     // change redis state of the game
     redis.hmset([GAME_ID,
         "state", "ENDED",
         "nextGameAt", nextGameAt,
-        "currentBets", JSON.stringify(upcomingBets),
+        "currentBets", upcomingBets,
         "upcomingBets", "[]",
         "cashedOutBets", "[]",
         "gameHash", "",
