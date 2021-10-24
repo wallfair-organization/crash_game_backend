@@ -80,6 +80,8 @@ const GAME_ID = process.env.GAME_ID || '614381d74f78686665a5bb76';
 
     console.log("Crash factor decided", crashFactor);
 
+
+
     let gameLengthMS = crashUtils.totalDelayTime(crashFactor);
 
     // log the start of the game for debugging purposes
@@ -101,6 +103,10 @@ const GAME_ID = process.env.GAME_ID || '614381d74f78686665a5bb76';
      job.attrs.data.endJob = endJob.attrs._id
      await job.save()
 
+   const animationIndex = Math.floor(Math.random() * 3);
+   const musicIndex = Math.floor(Math.random() * 2);
+   const bgIndex = Math.floor(Math.random() * 5);
+
     // notify others that game started
     redis.publish('message', JSON.stringify({
         to: GAME_ID,
@@ -108,6 +114,9 @@ const GAME_ID = process.env.GAME_ID || '614381d74f78686665a5bb76';
         data: {
             gameId: job.attrs._id,
             gameName: GAME_NAME,
+            animationIndex: animationIndex,
+            musicIndex: musicIndex,
+            bgIndex: bgIndex,
             "timeStarted": timeStarted.toISOString()
         }
     }));
@@ -116,6 +125,9 @@ const GAME_ID = process.env.GAME_ID || '614381d74f78686665a5bb76';
     redis.hmset([GAME_ID,
         "state", "STARTED",
         "gameId", gameId.toString(),
+        "animationIndex", JSON.stringify(animationIndex),
+        "musicIndex", JSON.stringify(musicIndex),
+        "bgIndex", JSON.stringify(bgIndex),
         "currentCrashFactor", crashFactor + "",
         "timeStarted", timeStarted.toISOString()]);
 });

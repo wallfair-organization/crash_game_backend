@@ -4,6 +4,25 @@ const express = require('express');
 const http    = require('http');
 const cors    = require('cors');
 const { rdsGet } = require('../utils/redis');
+const corsOptions = {
+    origin: ["wallfair.io",
+        /\.wallfair\.io$/,
+        /\.ngrok\.io$/,
+        /\.netlify\.app$/,
+        /localhost:?.*$/m,
+    ],
+    credentials: true,
+    allowedHeaders: [
+        'Origin',
+        'X-Requested-With',
+        'Content-Type',
+        'Accept',
+        'X-Access-Token',
+        'Authorization',
+    ],
+    exposedHeaders: ['Content-Length'],
+    preflightContinue: false,
+}
 
 const JWTstrategy = require('passport-jwt').Strategy;
 const ExtractJWT = require('passport-jwt').ExtractJwt;
@@ -26,6 +45,7 @@ var redis;
 // wallet service for wallet/blockchain operations
 const wallet = require("./wallet-service");
 const walletService = require('./wallet-service');
+const userService = require('./user-service');
 
 // configure passport to use JWT strategy with KEY provide via environment variable
 // the secret key must be the same as the one used in the main application
@@ -50,7 +70,7 @@ passport.use('jwt',
 const server = express();
 
 // TODO restrict access to fe app host
-server.use(cors());
+server.use(cors(corsOptions));
 
 // Giving server ability to parse json
 server.use(express.json());
@@ -77,17 +97,30 @@ server.get('/api/current', async (req, res) => {
     const lastCrashes = lastGames.map(lc => lc.attrs.data.crashFactor);
 
     // read info from redis
-    const { timeStarted, nextGameAt, state, currentBets, upcomingBets, gameId, cashedOutBets } = await rdsGet(redis, GAME_ID);
+    const { timeStarted,
+        nextGameAt,
+        state,
+        currentBets,
+        upcomingBets,
+        gameId,
+        cashedOutBets,
+        animationIndex,
+        musicIndex,
+        bgIndex,
+    } = await rdsGet(redis, GAME_ID);
 
     res.status(200).send({
         timeStarted,
-        nextGameAt,
+        nextGameAt: state === 'STARTED' ? null : nextGameAt,
         state,
         currentBets: currentBets ? JSON.parse(currentBets) : [],
         upcomingBets: upcomingBets ? JSON.parse(upcomingBets) : [],
         cashedOutBets: cashedOutBets ? JSON.parse(cashedOutBets) : [],
         lastCrashes,
         gameId,
+        animationIndex: JSON.parse(animationIndex),
+        musicIndex: JSON.parse(musicIndex),
+        bgIndex: JSON.parse(bgIndex)
     });
 });
 
@@ -98,13 +131,15 @@ server.post('/api/cashout', passport.authenticate('jwt', { session: false }), as
         let b = timeStarted.split(/\D+/);
         let startedAt = Date.UTC(b[0], --b[1], b[2], b[3], b[4], b[5], b[6]);
 
-        let timeDiff = Date.now() - startedAt;
+        const now = Date.now();
+        let timeDiff = now - startedAt;
         let crashFactor = crashUtils.calculateCrashFactor(timeDiff);
 
-        console.log("CASHOUT", crashFactor);
+        console.log(new Date(), "CASHOUT", req.user.username, crashFactor, currentCrashFactor, timeDiff, timeStarted, gameId);
 
-        if (crashFactor > currentCrashFactor) {
-            res.status(500).send("Too late!");
+        if (+crashFactor > +currentCrashFactor) {
+            console.debug(`[DEBUG] Cashout crash factor was ${crashFactor} but the current crashFactor was ${currentCrashFactor}`);
+            res.status(500).send(`Too late. Your crash factor was ${crashFactor} but the current crashFactor was ${currentCrashFactor}`);
             return;
         }
 
@@ -200,7 +235,8 @@ server.post('/api/trade', passport.authenticate('jwt', { session: false }), asyn
 
     // verify that user has enough balance to perform trade
     let balance = await wallet.getBalance(req.user._id.toString());
-    if (balance <= amount) {
+
+    if (balance < BigInt(amount)) {
         res.status(422).send(`User does not have enough balance (${balance}) to perform this operation (${amount})`);
         return;
     }
@@ -233,6 +269,14 @@ server.post('/api/trade', passport.authenticate('jwt', { session: false }), asyn
             data: pubData,
             broadcast: true
         });
+
+        //dont wait for this one, do this in the backround
+        userService.checkTotalGamesPlayedAward(req.user._id.toString(), {
+            gameTypeId: GAME_ID,
+            gameName: GAME_NAME
+        }).catch((err)=> {
+            console.error('checkTotalGamesPlayedAward', err)
+        })
 
         const game = await rdsGet(redis, GAME_ID);
 

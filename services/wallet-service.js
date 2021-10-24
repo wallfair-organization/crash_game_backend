@@ -28,7 +28,7 @@ module.exports = {
 
     lockOpenTrades: async (gameId) => {
         await casinoContract.lockOpenTrades(gameId.toString());
-        // link current waiting trades to game which just started 
+        // link current waiting trades to game which just started
         console.log(new Date(), `All open trades locked in game ${gameId}`);
     },
 
@@ -41,7 +41,7 @@ module.exports = {
 
     distributeRewards: async (gameId, crashFactor) => {
         console.log(new Date(), `Distribute rewards for all trades on game ${gameId} with a crash factor under ${crashFactor}`)
-        
+
         // give rewards to all winners
         let winners = await casinoContract.rewardWinners(gameId.toString(), crashFactor);
 
@@ -52,7 +52,6 @@ module.exports = {
     getCasinoBalance: async () => {
         return module.exports.getBalance(CASINO_WALLET_ADDR);
     },
-
     mintInitialBalance: async () => {
         await WFAIR.mint(CASINO_WALLET_ADDR, WALLET_INITIAL_LIQUIDITY_TO_MINT * WFAIR.ONE);
     }
