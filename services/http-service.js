@@ -4,6 +4,25 @@ const express = require('express');
 const http    = require('http');
 const cors    = require('cors');
 const { rdsGet } = require('../utils/redis');
+const corsOptions = {
+    origin: ["wallfair.io",
+        /\.wallfair\.io$/,
+        /\.ngrok\.io$/,
+        /\.netlify\.app$/,
+        /localhost:?.*$/m,
+    ],
+    credentials: true,
+    allowedHeaders: [
+        'Origin',
+        'X-Requested-With',
+        'Content-Type',
+        'Accept',
+        'X-Access-Token',
+        'Authorization',
+    ],
+    exposedHeaders: ['Content-Length'],
+    preflightContinue: false,
+}
 
 const JWTstrategy = require('passport-jwt').Strategy;
 const ExtractJWT = require('passport-jwt').ExtractJwt;
@@ -28,6 +47,7 @@ var redis;
 // wallet service for wallet/blockchain operations
 const wallet = require("./wallet-service");
 const walletService = require('./wallet-service');
+const userService = require('./user-service');
 
 // configure passport to use JWT strategy with KEY provide via environment variable
 // the secret key must be the same as the one used in the main application
@@ -52,7 +72,7 @@ passport.use('jwt',
 const server = express();
 
 // TODO restrict access to fe app host
-server.use(cors());
+server.use(cors(corsOptions));
 
 // Giving server ability to parse json
 server.use(express.json());
@@ -84,7 +104,7 @@ server.get('/api/current', async (req, res) => {
         state,
         currentBets,
         upcomingBets,
-        gameId,
+        gameHash,
         cashedOutBets,
         animationIndex,
         musicIndex,
@@ -93,13 +113,14 @@ server.get('/api/current', async (req, res) => {
 
     res.status(200).send({
         timeStarted,
-        nextGameAt,
+        nextGameAt: state === 'STARTED' ? null : nextGameAt,
         state,
         currentBets: currentBets ? JSON.parse(currentBets) : [],
         upcomingBets: upcomingBets ? JSON.parse(upcomingBets) : [],
         cashedOutBets: cashedOutBets ? JSON.parse(cashedOutBets) : [],
         lastCrashes,
-        gameId,
+        gameId: gameHash,
+        gameHash,
         animationIndex: JSON.parse(animationIndex),
         musicIndex: JSON.parse(musicIndex),
         bgIndex: JSON.parse(bgIndex)
@@ -108,26 +129,29 @@ server.get('/api/current', async (req, res) => {
 
 server.post('/api/cashout', passport.authenticate('jwt', { session: false }), async (req, res) => {
     try {
-        const { timeStarted, gameId, currentCrashFactor, cashedOutBets } = await rdsGet(redis, GAME_ID);
+        const { timeStarted, gameHash, currentCrashFactor, cashedOutBets } = await rdsGet(redis, GAME_ID);
 
         let b = timeStarted.split(/\D+/);
         let startedAt = Date.UTC(b[0], --b[1], b[2], b[3], b[4], b[5], b[6]);
 
-        let timeDiff = Date.now() - startedAt;
+        const now = Date.now();
+        let timeDiff = now - startedAt;
         let crashFactor = crashUtils.calculateCrashFactor(timeDiff);
 
-        console.log(new Date(), "CASHOUT", req.user.username, crashFactor, currentCrashFactor, timeDiff, timeStarted, gameId);
+        console.log(new Date(), "CASHOUT", req.user.username, crashFactor, currentCrashFactor, timeDiff, timeStarted, gameHash);
 
-        if (crashFactor > currentCrashFactor) {
+        if (+crashFactor > +currentCrashFactor) {
+            console.debug(`[DEBUG] Cashout crash factor was ${crashFactor} but the current crashFactor was ${currentCrashFactor}`);
             res.status(500).send(`Too late. Your crash factor was ${crashFactor} but the current crashFactor was ${currentCrashFactor}`);
             return;
         }
 
-        let { totalReward, stakedAmount } = await walletService.attemptCashout(gameId, crashFactor, req.user._id.toString());
+        let { totalReward, stakedAmount } = await walletService.attemptCashout(req.user._id.toString(), crashFactor, gameHash);
 
         const pubData = {
             crashFactor,
-            gameId,
+            gameId: gameHash,
+            gameHash,
             gameTypeId: GAME_ID,
             gameName: GAME_NAME,
             stakedAmount: parseInt(stakedAmount.toString()) / 10000,
@@ -167,7 +191,8 @@ server.post('/api/cashout', passport.authenticate('jwt', { session: false }), as
         const bets = [
             ...existingBets,
             {
-                gameId,
+                gameId: gameHash,
+                gameHash,
                 amount: parseInt(totalReward.toString()) / 10000,
                 stakedAmount: parseInt(stakedAmount.toString()) / 10000,
                 crashFactor,
@@ -181,7 +206,8 @@ server.post('/api/cashout', passport.authenticate('jwt', { session: false }), as
 
         res.status(200).json({
             crashFactor,
-            gameId,
+            gameId: gameHash,
+            gameHash,
             gameName: GAME_NAME,
             stakedAmount: parseInt(stakedAmount.toString()) / 10000,
             reward: parseInt(totalReward.toString()) / 10000,
@@ -255,6 +281,14 @@ server.post('/api/trade', passport.authenticate('jwt', { session: false }), asyn
             date: Date.now(),
             broadcast: true
         }))
+
+        //dont wait for this one, do this in the backround
+        userService.checkTotalGamesPlayedAward(req.user._id.toString(), {
+            gameTypeId: GAME_ID,
+            gameName: GAME_NAME
+        }).catch((err)=> {
+            console.error('checkTotalGamesPlayedAward', err)
+        })
 
         const game = await rdsGet(redis, GAME_ID);
 
