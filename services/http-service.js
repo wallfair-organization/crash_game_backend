@@ -102,7 +102,7 @@ server.get('/api/current', async (req, res) => {
         state,
         currentBets,
         upcomingBets,
-        gameId,
+        gameHash,
         cashedOutBets,
         animationIndex,
         musicIndex,
@@ -117,7 +117,8 @@ server.get('/api/current', async (req, res) => {
         upcomingBets: upcomingBets ? JSON.parse(upcomingBets) : [],
         cashedOutBets: cashedOutBets ? JSON.parse(cashedOutBets) : [],
         lastCrashes,
-        gameId,
+        gameId: gameHash,
+        gameHash,
         animationIndex: JSON.parse(animationIndex),
         musicIndex: JSON.parse(musicIndex),
         bgIndex: JSON.parse(bgIndex)
@@ -126,7 +127,7 @@ server.get('/api/current', async (req, res) => {
 
 server.post('/api/cashout', passport.authenticate('jwt', { session: false }), async (req, res) => {
     try {
-        const { timeStarted, gameId, currentCrashFactor, cashedOutBets } = await rdsGet(redis, GAME_ID);
+        const { timeStarted, gameHash, currentCrashFactor, cashedOutBets } = await rdsGet(redis, GAME_ID);
 
         let b = timeStarted.split(/\D+/);
         let startedAt = Date.UTC(b[0], --b[1], b[2], b[3], b[4], b[5], b[6]);
@@ -135,7 +136,7 @@ server.post('/api/cashout', passport.authenticate('jwt', { session: false }), as
         let timeDiff = now - startedAt;
         let crashFactor = crashUtils.calculateCrashFactor(timeDiff);
 
-        console.log(new Date(), "CASHOUT", req.user.username, crashFactor, currentCrashFactor, timeDiff, timeStarted, gameId);
+        console.log(new Date(), "CASHOUT", req.user.username, crashFactor, currentCrashFactor, timeDiff, timeStarted, gameHash);
 
         if (+crashFactor > +currentCrashFactor) {
             console.debug(`[DEBUG] Cashout crash factor was ${crashFactor} but the current crashFactor was ${currentCrashFactor}`);
@@ -143,11 +144,12 @@ server.post('/api/cashout', passport.authenticate('jwt', { session: false }), as
             return;
         }
 
-        let { totalReward, stakedAmount } = await walletService.attemptCashout(gameId, crashFactor, req.user._id.toString());
+        let { totalReward, stakedAmount } = await walletService.attemptCashout(req.user._id.toString(), crashFactor, gameHash);
 
         const pubData = {
             crashFactor,
-            gameId,
+            gameId: gameHash,
+            gameHash,
             gameTypeId: GAME_ID,
             gameName: GAME_NAME,
             stakedAmount: parseInt(stakedAmount.toString()) / 10000,
@@ -184,7 +186,8 @@ server.post('/api/cashout', passport.authenticate('jwt', { session: false }), as
         const bets = [
             ...existingBets,
             {
-                gameId,
+                gameId: gameHash,
+                gameHash,
                 amount: parseInt(totalReward.toString()) / 10000,
                 stakedAmount: parseInt(stakedAmount.toString()) / 10000,
                 crashFactor,
@@ -198,7 +201,8 @@ server.post('/api/cashout', passport.authenticate('jwt', { session: false }), as
 
         res.status(200).json({
             crashFactor,
-            gameId,
+            gameId: gameHash,
+            gameHash,
             gameName: GAME_NAME,
             stakedAmount: parseInt(stakedAmount.toString()) / 10000,
             reward: parseInt(totalReward.toString()) / 10000,
