@@ -26,24 +26,24 @@ module.exports = {
         console.log(new Date(), `User ${userId} canceled his trade`);
     },
 
-    lockOpenTrades: async (gameId) => {
-        await casinoContract.lockOpenTrades(gameId.toString());
+    lockOpenTrades: async (gameId, gameHash, crashFactor, gameLengthMS) => {
+        await casinoContract.lockOpenTrades(gameId, gameHash, crashFactor, gameLengthMS);
         // link current waiting trades to game which just started
-        console.log(new Date(), `All open trades locked in game ${gameId}`);
+        console.log(new Date(), `All open trades locked in game ${gameHash}`);
     },
 
-    attemptCashout: async (gameId, crashFactor, userWalletAddr) => {
-        console.log(new Date(), `Attempt cashout for gameId ${gameId}, crashFactor ${crashFactor}, user ${userWalletAddr}`);
+    attemptCashout: async (userWalletAddr, crashFactor, gameHash) => {
+        console.log(new Date(), `Attempt cashout for gameHash ${gameHash}, crashFactor ${crashFactor}, user ${userWalletAddr}`);
 
-        let result = await casinoContract.cashout(userWalletAddr, crashFactor, gameId);
+        let result = await casinoContract.cashout(userWalletAddr, crashFactor, gameHash);
         return result;
     },
 
-    distributeRewards: async (gameId, crashFactor) => {
-        console.log(new Date(), `Distribute rewards for all trades on game ${gameId} with a crash factor under ${crashFactor}`)
+    distributeRewards: async (gameHash, crashFactor) => {
+        console.log(new Date(), `Distribute rewards for all trades on game ${gameHash} with a crash factor under ${crashFactor}`)
 
         // give rewards to all winners
-        let winners = await casinoContract.rewardWinners(gameId.toString(), crashFactor);
+        let winners = await casinoContract.rewardWinners(gameHash, crashFactor);
 
         // return winners, to be used to send notifications
         return winners;

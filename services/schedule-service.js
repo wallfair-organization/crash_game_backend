@@ -43,8 +43,8 @@ const GAME_ID = process.env.GAME_ID || '614381d74f78686665a5bb76';
      // ensure only one game is starting from the previous game
      let {prevGame} = job.attrs.data;
 
-    // use the id of this job as gameId
-    let gameId = job.attrs._id;
+    // use the id of this job as gameHash
+    let gameHash = job.attrs._id;
     const jobs = await agenda.jobs({"name": "crashgame_start", "data.prevGame": prevGame}, {"data.createdAt": 1}, 1, 0);
     console.log(new Date(), "crashgame_start", jobs.length);
 
@@ -85,20 +85,20 @@ const GAME_ID = process.env.GAME_ID || '614381d74f78686665a5bb76';
     let gameLengthMS = crashUtils.totalDelayTime(crashFactor);
 
     // log the start of the game for debugging purposes
-    console.log(new Date(), `Next game is starting with an id of ${gameId}`);
+    console.log(new Date(), `Next game is starting with an id of ${gameHash}`);
 
     // log the chosen parameters for debugging purposes
-    console.log(new Date(), `The game ${gameId} will crash with a factor of ${crashFactor} in ${gameLengthMS / 1000} seconds`);
+    console.log(new Date(), `The game ${gameHash} will crash with a factor of ${crashFactor} in ${gameLengthMS / 1000} seconds`);
 
     // lock open trades to this particular game
-    await wallet.lockOpenTrades(gameId);
+    await wallet.lockOpenTrades(GAME_ID, gameHash.toString(), crashFactor, gameLengthMS);
     let nextGameStartTime = new Date(Date.now() + gameLengthMS);
 
      // schedules the end of the game
      const endJob = await agenda.schedule(nextGameStartTime, "crashgame_end", {
          createdAt: new Date(),
          crashFactor,
-         gameId
+         gameHash // TODO: make frontend use gameHash
      });
      job.attrs.data.endJob = endJob.attrs._id
      await job.save()
@@ -112,7 +112,8 @@ const GAME_ID = process.env.GAME_ID || '614381d74f78686665a5bb76';
         to: GAME_ID,
         event: "CASINO_START",
         data: {
-            gameId: job.attrs._id,
+            gameId: gameHash, // TODO: make frontend use gameHash
+            gameHash,
             gameName: GAME_NAME,
             animationIndex: animationIndex,
             musicIndex: musicIndex,
@@ -124,7 +125,7 @@ const GAME_ID = process.env.GAME_ID || '614381d74f78686665a5bb76';
     // change redis state of the game
     redis.hmset([GAME_ID,
         "state", "STARTED",
-        "gameId", gameId.toString(),
+        "gameHash", gameHash.toString(),
         "animationIndex", JSON.stringify(animationIndex),
         "musicIndex", JSON.stringify(musicIndex),
         "bgIndex", JSON.stringify(bgIndex),
@@ -149,10 +150,10 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
     // }
 
     // extract needed information from the job
-    let {crashFactor, gameId} = job.attrs.data;
+    let {crashFactor, gameHash} = job.attrs.data;
 
     // ensure the game ends only once
-    const jobs = await agenda.jobs({"name": "crashgame_end", "data.gameId": gameId}, {"data.createdAt": 1}, 1, 0);
+    const jobs = await agenda.jobs({"name": "crashgame_end", "data.gameHash": gameHash}, {"data.createdAt": 1}, 1, 0);
 
     console.log(new Date(), "crashgame_end", jobs.length);
 
@@ -162,7 +163,7 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
     }
 
     // log start of next game for debugging purposes
-    console.log(new Date(), `Game ${gameId} crashed now. Next game starts in ${GAME_INTERVAL_IN_SECONDS} seconds`);
+    console.log(new Date(), `Game ${gameHash} crashed now. Next game starts in ${GAME_INTERVAL_IN_SECONDS} seconds`);
 
     // Ensure another process won't create the same crashgame_start job
     if (job.attrs.data.nextStartJob){
@@ -172,13 +173,13 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
 
     // end game and update balances
     // DISABLED FOR NOW
-    // let winners = await wallet.distributeRewards(gameId, crashFactor);
+    // let winners = await wallet.distributeRewards(gameHash, crashFactor);
 
     // schedules the next game
     // if rewards are not distributed we won't have next game scheduled
     let startJob = await agenda.schedule(`in ${GAME_INTERVAL_IN_SECONDS} seconds`, "crashgame_start", {
         createdAt: new Date(),
-        prevGame: gameId
+        prevGame: gameHash
     });
     job.attrs.data.nextStartJob = startJob.attrs._id
     await job.save()
@@ -192,7 +193,7 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
         data: {
             nextGameAt,
             crashFactor,
-            gameId,
+            gameId: gameHash,
             gameName: GAME_NAME
         }
     }));
@@ -209,7 +210,7 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
             event: "CASINO_REWARD",
             data: {
                 crashFactor,
-                gameId,
+                gameId: gameHash,
                 gameName: GAME_NAME,
                 stakedAmount,
                 reward,
@@ -219,16 +220,16 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
     });*/
 
     // extract next game bets
-    const { upcomingBets } = await rdsGet(redis, GAME_ID);
+    const { upcomingBets = []} = await rdsGet(redis, GAME_ID);
 
     // change redis state of the game
     redis.hmset([GAME_ID,
         "state", "ENDED",
         "nextGameAt", nextGameAt,
-        "currentBets", upcomingBets,
+        "currentBets", JSON.stringify(upcomingBets),
         "upcomingBets", "[]",
         "cashedOutBets", "[]",
-        "gameId", "",
+        "gameHash", "",
         "currentCrashFactor", ""
     ]);
 });
