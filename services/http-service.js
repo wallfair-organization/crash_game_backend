@@ -326,10 +326,19 @@ server.post('/api/trade', passport.authenticate('jwt', { session: false }), asyn
 /**
  * Route: Cancel a trade
  */
-server.delete('/api/trade', passport.authenticate('jwt', { session: false }), (req, res) => {
-    // cancel the trade
-    // ensure that proper locking is in place, also when updating balance
-    // TODO implement this
+server.delete('/api/trade', passport.authenticate('jwt', { session: false }),
+  async (req, res) => {
+    try {
+        await wallet.cancelTrade(req.user.id)
+        const {upcomingBets = []} = await rdsGet(redis, GAME_ID);
+        const bets = upcomingBets.filter(bet => bet.userId !== req.user.id)
+
+
+        res.status(200).send()
+    } catch (err){
+        console.error(err);
+        res.status(500).send(err);
+    }
 });
 
 // Export methods to start/stop app server

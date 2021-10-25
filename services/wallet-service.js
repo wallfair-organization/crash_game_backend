@@ -1,7 +1,7 @@
 const wallfair = require("@wallfair.io/wallfair-commons");
 
 //Import sc mock
-const { CasinoTradeContract, Erc20 } = require('@wallfair.io/smart_contract_mock');
+const { CasinoTradeContract, Erc20, CASINO_TRADE_STATE } = require('@wallfair.io/smart_contract_mock');
 
 const CASINO_WALLET_ADDR = process.env.WALLET_ADDR || "CASINO";
 const WALLET_INITIAL_LIQUIDITY_TO_MINT = 1000000n;
@@ -23,6 +23,12 @@ module.exports = {
 
     cancelTrade: async (userId) => {
         // cancels an open trade that hasn't been grabbed yet
+        const openTrades = await casinoContract.getCasinoTradesByUserIdAndStates(userId, [CASINO_TRADE_STATE.OPEN])
+        if(openTrades.length){
+            await casinoContract.cancelTrade(userId, openTrades[0])
+        } else {
+            throw 'No open trades to cancel'
+        }
         console.log(new Date(), `User ${userId} canceled his trade`);
     },
 
