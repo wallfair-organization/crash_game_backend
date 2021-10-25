@@ -82,8 +82,6 @@ const GAME_ID = process.env.GAME_ID || '614381d74f78686665a5bb76';
 
     console.log("Crash factor decided", crashFactor);
 
-
-
     let gameLengthMS = crashUtils.totalDelayTime(crashFactor);
 
     // log the start of the game for debugging purposes

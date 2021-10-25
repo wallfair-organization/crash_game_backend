@@ -202,7 +202,7 @@ server.post('/api/cashout', passport.authenticate('jwt', { session: false }), as
         ];
 
         // update storage
-         redis.hmset([GAME_ID, 'cashedOutBets', JSON.stringify(bets)]);
+        redis.hmset([GAME_ID, 'cashedOutBets', JSON.stringify(bets)]);
 
         res.status(200).json({
             crashFactor,
