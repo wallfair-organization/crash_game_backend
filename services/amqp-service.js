@@ -16,7 +16,7 @@ const send = async (exchange, routingKey, data) => {
   try {
     await channel.assertExchange(exchange, "topic", { durable: true });
     channel.publish(exchange, routingKey, Buffer.from(data));
-    console.log("PUBLISH %s - %s", exchange, routingKey);
+    console.log(new Date(), `AMQP-PUBLISH ${exchange} - ${routingKey}`);
   } catch (e) {
     console.error("Error in publishing message", e);
   }
