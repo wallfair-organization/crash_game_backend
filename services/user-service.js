@@ -2,7 +2,8 @@ const { Erc20 } = require('@wallfair.io/smart_contract_mock');
 
 const {WFAIR_REWARDS} = require('../utils/constants')
 const {getCasinoGamePlayCount} = require("./statistics-service");
-const { publishEvent, notificationEvents } = require('./notification-service')
+const { notificationEvents } = require("@wallfair.io/wallfair-commons/constants/eventTypes");
+const amqp = require('./amqp-service');
 
 const WFAIR = new Erc20('WFAIR');
 
@@ -27,13 +28,14 @@ exports.createUserAwardEvent = async ({userId, awardData, broadcast = false}) =>
             console.error('award mintUser', err)
         })
     }
-
-    publishEvent(notificationEvents.EVENT_USER_AWARD, {
+    // publish message for uniEvent
+    amqp.send('universal_events', 'event.user_reward', JSON.stringify({
+        event: notificationEvents.EVENT_USER_AWARD,
         producer: 'user',
-        producerId: userId,
+        producerId: req.user._id,
         data: awardData,
         broadcast
-    });
+    }))
 }
 
 /***
