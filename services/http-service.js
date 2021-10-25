@@ -197,7 +197,7 @@ server.post('/api/cashout', passport.authenticate('jwt', { session: false }), as
         ];
 
         // update storage
-         redis.hmset([GAME_ID, 'cashedOutBets', JSON.stringify(bets)]);
+         redis.hset([GAME_ID, 'cashedOutBets', JSON.stringify(bets)]);
 
         res.status(200).json({
             crashFactor,
@@ -302,7 +302,7 @@ server.post('/api/trade', passport.authenticate('jwt', { session: false }), asyn
         ];
 
         // update storage
-        redis.hmset([GAME_ID, betKey, JSON.stringify(bets)]);
+        redis.hset([GAME_ID, betKey, JSON.stringify(bets)]);
 
         res.status(200).json({});
     } catch (err) {
