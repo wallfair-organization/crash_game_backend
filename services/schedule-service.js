@@ -234,17 +234,6 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
     ]);
 });
 
-agenda.define("update casino matches", async (job) => {
-    console.log('update casino_matches agenda!');
-});
-
-/**
- * Agenda is ready
- */
-agenda.on('ready', async (err, job) => {
-    await agenda.every("30 minutes", ["update casino matches"], null, {skipImmediate: false})
-});
-
 /**
  * This function will capture any error and re-schedule the job.
  * For now, jobs are being re-scheduled for 2 seconds after failure.

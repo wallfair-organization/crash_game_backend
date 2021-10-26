@@ -15,6 +15,9 @@ const wallet = require("./services/wallet-service");
 const mongoose = require('mongoose');
 const wallfair = require('@wallfair.io/wallfair-commons');
 
+// import general-jobs
+const {initGeneralJobs} = require('./jobs/general-jobs')
+
 // Create Redis pub client, which will be used to send out notifications
 const { createClient } = require("redis");
 const pubClient = createClient({
@@ -44,8 +47,8 @@ init(pubClient);
     // load casino balance
     let casinoBalance = await wallet.getCasinoBalance();
     console.log(new Date(), `Casino balance loaded with ${casinoBalance} WFAIR`);
-    
-    // mint initial liquidity if casino balance is 0. 
+
+    // mint initial liquidity if casino balance is 0.
     // (Balance should never reach 0 again)
     if (casinoBalance == 0) {
         await wallet.mintInitialBalance();
@@ -58,6 +61,8 @@ init(pubClient);
     // init scheduling service
     console.log(new Date(), "Initializing scheduler");
     await scheduler.init(pubClient);
+
+    initGeneralJobs();
 
     // log to console for debugging purposes
     console.log(new Date(), "All systems ready to start crashing!");
