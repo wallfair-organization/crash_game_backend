@@ -15,9 +15,6 @@ const wallet = require("./services/wallet-service");
 const mongoose = require('mongoose');
 const wallfair = require('@wallfair.io/wallfair-commons');
 
-// import general-jobs
-const {initGeneralJobs} = require('./jobs/general-jobs')
-
 // Create Redis pub client, which will be used to send out notifications
 const { createClient } = require("redis");
 const pubClient = createClient({
@@ -61,8 +58,6 @@ init(pubClient);
     // init scheduling service
     console.log(new Date(), "Initializing scheduler");
     await scheduler.init(pubClient);
-
-    initGeneralJobs();
 
     // log to console for debugging purposes
     console.log(new Date(), "All systems ready to start crashing!");
