@@ -1,7 +1,7 @@
 const wallfair = require("@wallfair.io/wallfair-commons");
 
 //Import sc mock
-const { CasinoTradeContract, Erc20 } = require('@wallfair.io/smart_contract_mock');
+const { CasinoTradeContract, Erc20, CASINO_TRADE_STATE } = require('@wallfair.io/smart_contract_mock');
 
 const CASINO_WALLET_ADDR = process.env.WALLET_ADDR || "CASINO";
 const WALLET_INITIAL_LIQUIDITY_TO_MINT = 1000000n;
@@ -15,6 +15,13 @@ module.exports = {
     },
 
     placeTrade: async (userId, amount, crashFactor) => {
+        const openTrades = await casinoContract.getCasinoTradesByUserIdAndStates(userId.toString(), [CASINO_TRADE_STATE.OPEN])
+
+        if(openTrades.length > 1) {
+            console.error(`[wallet-service:placeTrade]: Trade already exists for user ${userId}. PARAMS: userId: ${userId}, amount: ${amount}, crashFactor: ${crashFactor}`);
+            throw new Error('Trade is already open');
+        }
+
         await casinoContract.placeTrade(userId.toString(), BigInt(amount) * WFAIR.ONE, crashFactor);
 
         // store an open trade and leave it open for the next game to grab
