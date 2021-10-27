@@ -121,7 +121,8 @@ server.get('/api/current', async (req, res) => {
         gameHash,
         animationIndex: JSON.parse(animationIndex),
         musicIndex: JSON.parse(musicIndex),
-        bgIndex: JSON.parse(bgIndex)
+        bgIndex: JSON.parse(bgIndex),
+        ts: Date.now()
     });
 });
 

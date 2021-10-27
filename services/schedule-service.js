@@ -118,7 +118,8 @@ const GAME_ID = process.env.GAME_ID || '614381d74f78686665a5bb76';
             animationIndex: animationIndex,
             musicIndex: musicIndex,
             bgIndex: bgIndex,
-            "timeStarted": timeStarted.toISOString()
+            "timeStarted": timeStarted.toISOString(),
+            ts: Date.now()
         }
     }));
 
@@ -194,7 +195,8 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
             nextGameAt,
             crashFactor,
             gameId: gameHash,
-            gameName: GAME_NAME
+            gameName: GAME_NAME,
+            ts: Date.now()
         }
     }));
 
