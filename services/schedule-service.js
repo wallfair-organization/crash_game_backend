@@ -287,7 +287,7 @@ module.exports = {
         }
 
         //init single agenda job for update casino matches
-        await agenda.every("30 minutes", ["update casino matches"], null, {skipImmediate: false})
+        await agenda.every("5 minutes", ["update casino matches"], null, {skipImmediate: false})
     },
 
     stop: async () => {
