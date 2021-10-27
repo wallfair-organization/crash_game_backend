@@ -3,6 +3,7 @@ const Agenda = require("agenda");
 const agenda = new Agenda({ db: { address: process.env.DB_CONNECTION } });
 
 const { rdsGet } = require('../utils/redis');
+const { updateCasinoMatches } = require('../jobs/general-jobs');
 
 // define constants that can be overriden in .env
 const GAME_INTERVAL_IN_SECONDS = process.env.GAME_INTERVAL_IN_SECONDS || 5;
@@ -234,6 +235,10 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
     ]);
 });
 
+agenda.define("update casino matches", async (job) => {
+    await updateCasinoMatches();
+});
+
 /**
  * This function will capture any error and re-schedule the job.
  * For now, jobs are being re-scheduled for 2 seconds after failure.
@@ -277,6 +282,9 @@ module.exports = {
             jobs[0].schedule("in 2 seconds");
             await jobs[0].save();
         }
+
+        //init single agenda job for update casino matches
+        await agenda.every("30 minutes", ["update casino matches"], null, {skipImmediate: false})
     },
 
     stop: async () => {
