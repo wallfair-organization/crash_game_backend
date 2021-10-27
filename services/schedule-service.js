@@ -236,6 +236,9 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
         "gameHash", "",
         "currentCrashFactor", ""
     ]);
+
+    //init single agenda job for update casino matches with 2 seconds delay
+    await agenda.schedule("in 2 seconds", ["update casino matches"], null);
 });
 
 agenda.define("update casino matches", async (job) => {
@@ -285,9 +288,6 @@ module.exports = {
             jobs[0].schedule("in 2 seconds");
             await jobs[0].save();
         }
-
-        //init single agenda job for update casino matches
-        await agenda.every("5 minutes", ["update casino matches"], null, {skipImmediate: false})
     },
 
     stop: async () => {
