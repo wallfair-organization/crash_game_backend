@@ -101,7 +101,10 @@ server.get('/', (req, res) => {
 server.get('/api/current', async (req, res) => {
     // retrieve the last 10 jobs and extract crashFactor from them
     const lastGames = await agenda.jobs({name: "crashgame_end"}, {lastFinishedAt: -1}, 10, 0);
-    const lastCrashes = lastGames.map(lc => lc.attrs.data.crashFactor);
+    const lastCrashes = lastGames.map(lc => ({
+        crashFactor: lc.attrs.data.crashFactor,
+        gameHash: lc.attrs._id
+    }));
 
     // read info from redis
     const { timeStarted,
@@ -115,13 +118,26 @@ server.get('/api/current', async (req, res) => {
 
     const {currentBets, upcomingBets, cashedOutBets} = await casinoContract.getBets(gameHash)
 
+    const userIds = [...currentBets, ...upcomingBets, ...cashedOutBets].map(b => b.userid)
+    const users = await wallfair.models.User.find({_id: {$in: [userIds]}}, {username: 1, _id: 1})
+
+     function normalizeBet(bet){
+        const user = users.find(u => u._id.toString() === bet.userid)
+        return {
+            amount: parseInt(bet.stakedamount) / 10000,
+            userId: bet.userid,
+            crashFactor: parseInt(bet.crashfactor),
+            username: user.username
+        }
+     }
+
     res.status(200).send({
         timeStarted,
         nextGameAt: state === 'STARTED' ? null : nextGameAt,
         state,
-        currentBets: currentBets ? currentBets : [],
-        upcomingBets: upcomingBets ? upcomingBets : [],
-        cashedOutBets: cashedOutBets ? cashedOutBets : [],
+        currentBets: currentBets ? currentBets.map(normalizeBet) : [],
+        upcomingBets: upcomingBets ? upcomingBets.map(normalizeBet) : [],
+        cashedOutBets: cashedOutBets ? cashedOutBets.map(normalizeBet) : [],
         lastCrashes,
         gameId: gameHash,
         gameHash,
@@ -326,6 +342,75 @@ server.delete('/api/trade', passport.authenticate('jwt', { session: false }), (r
     // TODO implement this
 });
 
+
+/**
+ * Get matches
+ */
+
+server.get('/api/matches', async (req, res) => {
+    try {
+        const {
+            page = 1,
+            perPage = 10
+        } = req.query;
+        const matches = await casinoContract.getMatches(page, perPage, GAME_ID);
+        return res.status(200)
+          .send(matches)
+    } catch (err) {
+        console.log('QUERY:', req.query);
+        console.log(err);
+        res.status(500).send(err);
+    }
+})
+
+/**
+ * Get last 10 matches
+ */
+
+server.get('/api/matches/:hash', async (req, res) => {
+    try {
+        const { hash } = req.params;
+        const match = await casinoContract.getMatchByGameHash(hash);
+        return res.status(200)
+          .send(match);
+    } catch (err) {
+        console.log("PARAMS:", req.params);
+        console.log(err);
+        res.status(500).send(err);
+    }
+})
+
+/**
+ * Get luckies wins in 24 hours
+ */
+
+server.get('/api/trades/lucky', async (req, res) => {
+    try {
+        const trades = await casinoContract.getLuckyWins();
+        return res.status(200)
+          .send(trades);
+    } catch (err) {
+        console.log(err);
+        res.status(500).send(err);
+    }
+})
+
+/**
+ * Get high wins in 24 hours
+ */
+
+server.get('/api/trades/lucky', async (req, res) => {
+    try {
+        const trades = await casinoContract.getHighWins();
+        return res.status(200)
+          .send(trades);
+    } catch (err) {
+        console.log(err);
+        res.status(500).send(err);
+    }
+})
+
+
 // Export methods to start/stop app server
 var appServer;
 module.exports = {
@@ -346,3 +431,5 @@ module.exports = {
         }
     }
 }
+
+
