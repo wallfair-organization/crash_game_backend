@@ -22,8 +22,8 @@ const pubClient = createClient({
     no_ready_check: false
 });
 
-const { init } = require('./services/notification-service');
-init(pubClient);
+const amqp = require('./services/amqp-service');
+amqp.init();
 
 /**
  * Main function of this application.

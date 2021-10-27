@@ -4,14 +4,35 @@ const express = require('express');
 const http    = require('http');
 const cors    = require('cors');
 const { rdsGet } = require('../utils/redis');
+const corsOptions = {
+    origin: ["wallfair.io",
+        /\.wallfair\.io$/,
+        /\.ngrok\.io$/,
+        /\.netlify\.app$/,
+        /localhost:?.*$/m,
+    ],
+    credentials: true,
+    allowedHeaders: [
+        'Origin',
+        'X-Requested-With',
+        'Content-Type',
+        'Accept',
+        'X-Access-Token',
+        'Authorization',
+    ],
+    exposedHeaders: ['Content-Length'],
+    preflightContinue: false,
+}
 
 const JWTstrategy = require('passport-jwt').Strategy;
 const ExtractJWT = require('passport-jwt').ExtractJwt;
 
 const wallfair = require("@wallfair.io/wallfair-commons");
+const { notificationEvents } = require("@wallfair.io/wallfair-commons/constants/eventTypes");
 
 const { agenda } = require("./schedule-service");
-const { publishEvent, notificationEvents } = require('./notification-service')
+
+const amqp = require('./amqp-service');
 
 const crashUtils = require("../utils/crash_utils");
 
@@ -26,6 +47,7 @@ var redis;
 // wallet service for wallet/blockchain operations
 const wallet = require("./wallet-service");
 const walletService = require('./wallet-service');
+const userService = require('./user-service');
 
 // configure passport to use JWT strategy with KEY provide via environment variable
 // the secret key must be the same as the one used in the main application
@@ -50,7 +72,7 @@ passport.use('jwt',
 const server = express();
 
 // TODO restrict access to fe app host
-server.use(cors());
+server.use(cors(corsOptions));
 
 // Giving server ability to parse json
 server.use(express.json());
@@ -77,42 +99,59 @@ server.get('/api/current', async (req, res) => {
     const lastCrashes = lastGames.map(lc => lc.attrs.data.crashFactor);
 
     // read info from redis
-    const { timeStarted, nextGameAt, state, currentBets, upcomingBets, gameId, cashedOutBets } = await rdsGet(redis, GAME_ID);
+    const { timeStarted,
+        nextGameAt,
+        state,
+        currentBets,
+        upcomingBets,
+        gameHash,
+        cashedOutBets,
+        animationIndex,
+        musicIndex,
+        bgIndex,
+    } = await rdsGet(redis, GAME_ID);
 
     res.status(200).send({
         timeStarted,
-        nextGameAt,
+        nextGameAt: state === 'STARTED' ? null : nextGameAt,
         state,
         currentBets: currentBets ? JSON.parse(currentBets) : [],
         upcomingBets: upcomingBets ? JSON.parse(upcomingBets) : [],
         cashedOutBets: cashedOutBets ? JSON.parse(cashedOutBets) : [],
         lastCrashes,
-        gameId,
+        gameId: gameHash,
+        gameHash,
+        animationIndex: JSON.parse(animationIndex),
+        musicIndex: JSON.parse(musicIndex),
+        bgIndex: JSON.parse(bgIndex)
     });
 });
 
 server.post('/api/cashout', passport.authenticate('jwt', { session: false }), async (req, res) => {
     try {
-        const { timeStarted, gameId, currentCrashFactor, cashedOutBets } = await rdsGet(redis, GAME_ID);
+        const { timeStarted, gameHash, currentCrashFactor, cashedOutBets } = await rdsGet(redis, GAME_ID);
 
         let b = timeStarted.split(/\D+/);
         let startedAt = Date.UTC(b[0], --b[1], b[2], b[3], b[4], b[5], b[6]);
 
-        let timeDiff = Date.now() - startedAt;
+        const now = Date.now();
+        let timeDiff = now - startedAt;
         let crashFactor = crashUtils.calculateCrashFactor(timeDiff);
 
-        console.log("CASHOUT", crashFactor);
+        console.log(new Date(), "CASHOUT", req.user.username, crashFactor, currentCrashFactor, timeDiff, timeStarted, gameHash);
 
-        if (crashFactor > currentCrashFactor) {
-            res.status(500).send("Too late!");
+        if (+crashFactor > +currentCrashFactor) {
+            console.debug(`[DEBUG] Cashout crash factor was ${crashFactor} but the current crashFactor was ${currentCrashFactor}`);
+            res.status(500).send(`Too late. Your crash factor was ${crashFactor} but the current crashFactor was ${currentCrashFactor}`);
             return;
         }
 
-        let { totalReward, stakedAmount } = await walletService.attemptCashout(gameId, crashFactor, req.user._id.toString());
+        let { totalReward, stakedAmount } = await walletService.attemptCashout(req.user._id.toString(), crashFactor, gameHash);
 
         const pubData = {
             crashFactor,
-            gameId,
+            gameId: gameHash,
+            gameHash,
             gameTypeId: GAME_ID,
             gameName: GAME_NAME,
             stakedAmount: parseInt(stakedAmount.toString()) / 10000,
@@ -120,22 +159,25 @@ server.post('/api/cashout', passport.authenticate('jwt', { session: false }), as
             userId: req.user._id,
             username: req.user.username,
             updatedAt: Date.now()
-        };
+        }
 
         // create notification for channel
-        redis.publish('message', JSON.stringify({
+        amqp.send('crash_game', 'casino.reward', JSON.stringify({
             to: GAME_ID,
             event: "CASINO_REWARD",
-            data: pubData
-        }));
+            crashFactor,
+            ...pubData
+        }))
 
-        // save and publish message for uniEvent
-        publishEvent(notificationEvents.EVENT_CASINO_CASHOUT, {
+        // publish message for uniEvent
+        amqp.send('universal_events', 'casino.reward', JSON.stringify({
+            event: notificationEvents.EVENT_CASINO_CASHOUT,
             producer: 'user',
             producerId: req.user._id,
             data: pubData,
+            date: Date.now(),
             broadcast: true
-        });
+        }))
 
         let user = await wallfair.models.User.findById({ _id: req.user._id }, { amountWon: 1 }).exec();
         if (user) {
@@ -149,7 +191,8 @@ server.post('/api/cashout', passport.authenticate('jwt', { session: false }), as
         const bets = [
             ...existingBets,
             {
-                gameId,
+                gameId: gameHash,
+                gameHash,
                 amount: parseInt(totalReward.toString()) / 10000,
                 stakedAmount: parseInt(stakedAmount.toString()) / 10000,
                 crashFactor,
@@ -159,11 +202,12 @@ server.post('/api/cashout', passport.authenticate('jwt', { session: false }), as
         ];
 
         // update storage
-         redis.hmset([GAME_ID, 'cashedOutBets', JSON.stringify(bets)]);
+        redis.hmset([GAME_ID, 'cashedOutBets', JSON.stringify(bets)]);
 
         res.status(200).json({
             crashFactor,
-            gameId,
+            gameId: gameHash,
+            gameHash,
             gameName: GAME_NAME,
             stakedAmount: parseInt(stakedAmount.toString()) / 10000,
             reward: parseInt(totalReward.toString()) / 10000,
@@ -200,7 +244,8 @@ server.post('/api/trade', passport.authenticate('jwt', { session: false }), asyn
 
     // verify that user has enough balance to perform trade
     let balance = await wallet.getBalance(req.user._id.toString());
-    if (balance <= amount) {
+
+    if (balance < BigInt(amount)) {
         res.status(422).send(`User does not have enough balance (${balance}) to perform this operation (${amount})`);
         return;
     }
@@ -220,19 +265,30 @@ server.post('/api/trade', passport.authenticate('jwt', { session: false }), asyn
         };
 
         // notify users
-        redis.publish('message', JSON.stringify({
+        amqp.send('crash_game', 'casino.trade', JSON.stringify({
             to: GAME_ID,
             event: "CASINO_TRADE",
-            data: pubData
-        }));
+            gameName: GAME_NAME,
+            ...pubData
+        }))
 
-        // save and publish message for uniEvent
-        publishEvent(notificationEvents.EVENT_CASINO_PLACE_BET, {
+        // publish message for uniEvent
+        amqp.send('universal_events', 'casino.trade', JSON.stringify({
+            event: notificationEvents.EVENT_CASINO_PLACE_BET,
             producer: 'user',
             producerId: req.user._id,
             data: pubData,
+            date: Date.now(),
             broadcast: true
-        });
+        }))
+
+        //dont wait for this one, do this in the backround
+        userService.checkTotalGamesPlayedAward(req.user._id.toString(), {
+            gameTypeId: GAME_ID,
+            gameName: GAME_NAME
+        }).catch((err)=> {
+            console.error('checkTotalGamesPlayedAward', err)
+        })
 
         const game = await rdsGet(redis, GAME_ID);
 

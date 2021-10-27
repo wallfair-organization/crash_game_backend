@@ -22,6 +22,8 @@ var redis;
 
 // wallet service for wallet/blockchain operations
 const wallet = require("./wallet-service");
+// rabbitmq service
+const amqp = require('./amqp-service');
 
 const ONE = 10000n;
 const GAME_ID = process.env.GAME_ID || '614381d74f78686665a5bb76';
@@ -43,8 +45,8 @@ const GAME_ID = process.env.GAME_ID || '614381d74f78686665a5bb76';
      // ensure only one game is starting from the previous game
      let {prevGame} = job.attrs.data;
 
-    // use the id of this job as gameId
-    let gameId = job.attrs._id;
+    // use the id of this job as gameHash
+    let gameHash = job.attrs._id;
     const jobs = await agenda.jobs({"name": "crashgame_start", "data.prevGame": prevGame}, {"data.createdAt": 1}, 1, 0);
     console.log(new Date(), "crashgame_start", jobs.length);
 
@@ -83,46 +85,51 @@ const GAME_ID = process.env.GAME_ID || '614381d74f78686665a5bb76';
     let gameLengthMS = crashUtils.totalDelayTime(crashFactor);
 
     // log the start of the game for debugging purposes
-    console.log(new Date(), `Next game is starting with an id of ${gameId}`);
+    console.log(new Date(), `Next game is starting with an id of ${gameHash}`);
 
     // log the chosen parameters for debugging purposes
-    console.log(new Date(), `The game ${gameId} will crash with a factor of ${crashFactor} in ${gameLengthMS / 1000} seconds`);
+    console.log(new Date(), `The game ${gameHash} will crash with a factor of ${crashFactor} in ${gameLengthMS / 1000} seconds`);
 
     // lock open trades to this particular game
-    await wallet.lockOpenTrades(gameId);
+    await wallet.lockOpenTrades(GAME_ID, gameHash.toString(), crashFactor, gameLengthMS);
     let nextGameStartTime = new Date(Date.now() + gameLengthMS);
 
      // schedules the end of the game
      const endJob = await agenda.schedule(nextGameStartTime, "crashgame_end", {
          createdAt: new Date(),
          crashFactor,
-         gameId
+         gameHash // TODO: make frontend use gameHash
      });
      job.attrs.data.endJob = endJob.attrs._id
      await job.save()
 
+   const animationIndex = Math.floor(Math.random() * 3);
+   const musicIndex = Math.floor(Math.random() * 2);
+   const bgIndex = Math.floor(Math.random() * 5);
+
     // notify others that game started
-    redis.publish('message', JSON.stringify({
+    amqp.send('crash_game', 'casino.start', JSON.stringify({
         to: GAME_ID,
         event: "CASINO_START",
-        data: {
-            gameId: job.attrs._id,
-            gameName: GAME_NAME,
-            "timeStarted": timeStarted.toISOString()
-        }
-    }));
+        gameId: gameHash,
+        gameHash,
+        gameName: GAME_NAME,
+        animationIndex,
+        musicIndex,
+        bgIndex,
+        "timeStarted": timeStarted.toISOString()
+    }))
 
     // change redis state of the game
     redis.hmset([GAME_ID,
         "state", "STARTED",
-        "gameId", gameId.toString(),
+        "gameHash", gameHash.toString(),
+        "animationIndex", JSON.stringify(animationIndex),
+        "musicIndex", JSON.stringify(musicIndex),
+        "bgIndex", JSON.stringify(bgIndex),
         "currentCrashFactor", crashFactor + "",
         "timeStarted", timeStarted.toISOString()]);
 });
-
-
-
-
 
 /**
  * Method for ending the game.
@@ -137,10 +144,10 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
     // }
 
     // extract needed information from the job
-    let {crashFactor, gameId} = job.attrs.data;
+    let {crashFactor, gameHash} = job.attrs.data;
 
     // ensure the game ends only once
-    const jobs = await agenda.jobs({"name": "crashgame_end", "data.gameId": gameId}, {"data.createdAt": 1}, 1, 0);
+    const jobs = await agenda.jobs({"name": "crashgame_end", "data.gameHash": gameHash}, {"data.createdAt": 1}, 1, 0);
 
     console.log(new Date(), "crashgame_end", jobs.length);
 
@@ -150,7 +157,7 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
     }
 
     // log start of next game for debugging purposes
-    console.log(new Date(), `Game ${gameId} crashed now. Next game starts in ${GAME_INTERVAL_IN_SECONDS} seconds`);
+    console.log(new Date(), `Game ${gameHash} crashed now. Next game starts in ${GAME_INTERVAL_IN_SECONDS} seconds`);
 
     // Ensure another process won't create the same crashgame_start job
     if (job.attrs.data.nextStartJob){
@@ -160,13 +167,13 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
 
     // end game and update balances
     // DISABLED FOR NOW
-    // let winners = await wallet.distributeRewards(gameId, crashFactor);
+    // let winners = await wallet.distributeRewards(gameHash, crashFactor);
 
     // schedules the next game
     // if rewards are not distributed we won't have next game scheduled
     let startJob = await agenda.schedule(`in ${GAME_INTERVAL_IN_SECONDS} seconds`, "crashgame_start", {
         createdAt: new Date(),
-        prevGame: gameId
+        prevGame: gameHash
     });
     job.attrs.data.nextStartJob = startJob.attrs._id
     await job.save()
@@ -174,40 +181,17 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
     let nextGameAt = startJob.attrs.nextRunAt;
 
     // notify others that game ended
-    redis.publish('message', JSON.stringify({
+    amqp.send('crash_game', 'casino.end', JSON.stringify({
         to: GAME_ID,
         event: "CASINO_END",
-        data: {
-            nextGameAt,
-            crashFactor,
-            gameId,
-            gameName: GAME_NAME
-        }
-    }));
-
-
-    // notifies about wins
-    // DISABLED FOR NOW
-    /*winners.forEach((winner) => {
-        let reward = Number(winner.reward) / Number(ONE);
-        let stakedAmount = parseInt(winner.stakedamount) / Number(ONE);
-
-        redis.publish('message', JSON.stringify({
-            to: winner.userid,
-            event: "CASINO_REWARD",
-            data: {
-                crashFactor,
-                gameId,
-                gameName: GAME_NAME,
-                stakedAmount,
-                reward,
-                userId: winner.userid,
-            }
-        }));
-    });*/
+        nextGameAt,
+        crashFactor,
+        gameId: gameHash,
+        gameName: GAME_NAME
+    }))
 
     // extract next game bets
-    const { upcomingBets } = await rdsGet(redis, GAME_ID);
+    const { upcomingBets = "[]"} = await rdsGet(redis, GAME_ID);
 
     // change redis state of the game
     redis.hmset([GAME_ID,
@@ -216,7 +200,7 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
         "currentBets", upcomingBets,
         "upcomingBets", "[]",
         "cashedOutBets", "[]",
-        "gameId", "",
+        "gameHash", "",
         "currentCrashFactor", ""
     ]);
 });
