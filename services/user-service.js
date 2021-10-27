@@ -32,7 +32,7 @@ exports.createUserAwardEvent = async ({userId, awardData, broadcast = false}) =>
     amqp.send('universal_events', 'event.user_reward', JSON.stringify({
         event: notificationEvents.EVENT_USER_AWARD,
         producer: 'user',
-        producerId: req.user._id,
+        producerId: userId,
         data: awardData,
         broadcast
     }))
