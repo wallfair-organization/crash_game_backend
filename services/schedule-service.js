@@ -27,6 +27,9 @@ const wallet = require("./wallet-service");
 const ONE = 10000n;
 const GAME_ID = process.env.GAME_ID || '614381d74f78686665a5bb76';
 
+//Import sc mock
+const { CasinoTradeContract, Erc20 } = require('@wallfair.io/smart_contract_mock');
+
 /**
  * Method for starting the game.
  * This method decides the crash factor, and schedules the end of the game.
