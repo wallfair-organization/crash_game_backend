@@ -123,7 +123,7 @@ const GAME_ID = process.env.GAME_ID || '614381d74f78686665a5bb76';
     }));
 
     // change redis state of the game
-    redis.hset([GAME_ID,
+    redis.hmset([GAME_ID,
         "state", "STARTED",
         "gameHash", gameHash.toString(),
         "animationIndex", JSON.stringify(animationIndex),
@@ -223,7 +223,7 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
     const { upcomingBets = "[]"} = await rdsGet(redis, GAME_ID);
 
     // change redis state of the game
-    redis.hset([GAME_ID,
+    redis.hmset([GAME_ID,
         "state", "ENDED",
         "nextGameAt", nextGameAt,
         "currentBets", upcomingBets,
