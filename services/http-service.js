@@ -100,7 +100,7 @@ server.get('/api/current', async (req, res) => {
     const lastGames = await agenda.jobs({name: "crashgame_end"}, {lastFinishedAt: -1}, 10, 0);
     const lastCrashes = lastGames.map(lc => ({
         crashFactor: lc.attrs.data.crashFactor,
-        gameHash: lc.attrs._id
+        gameHash: lc.attrs.data.gameHash
     }));
 
     // read info from redis
