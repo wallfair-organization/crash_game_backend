@@ -25,7 +25,7 @@ module.exports = {
         // cancels an open trade that hasn't been grabbed yet
         const openTrades = await casinoContract.getCasinoTradesByUserIdAndStates(userId, [CASINO_TRADE_STATE.OPEN])
         if(openTrades.length){
-            await casinoContract.cancelTrade(userId, openTrades[0])
+            return casinoContract.cancelTrade(userId, openTrades[0])
         } else {
             throw 'No open trades to cancel'
         }
