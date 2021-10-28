@@ -46,7 +46,11 @@ var redis;
 const wallet = require("./wallet-service");
 const walletService = require('./wallet-service');
 const userService = require('./user-service');
+//Import sc mock
+const { CasinoTradeContract, Erc20 } = require('@wallfair.io/smart_contract_mock');
 
+const CASINO_WALLET_ADDR = process.env.WALLET_ADDR || "CASINO";
+const casinoContract = new CasinoTradeContract(CASINO_WALLET_ADDR);
 // configure passport to use JWT strategy with KEY provide via environment variable
 // the secret key must be the same as the one used in the main application
 passport.use('jwt',
