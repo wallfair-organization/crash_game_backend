@@ -367,9 +367,8 @@ server.get('/api/matches', async (req, res) => {
 server.get('/api/matches/:hash', async (req, res) => {
     try {
         const { hash } = req.params;
-        const match = await casinoContract.getMatchByGameHash(hash);
-        return res.status(200)
-          .send(match);
+        const match = await casinoContract.getMatchByHash(hash);
+        return res.status(200).send(match);
     } catch (err) {
         console.log("PARAMS:", req.params);
         console.log(err);
