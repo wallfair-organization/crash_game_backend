@@ -46,14 +46,7 @@ var redis;
 const wallet = require("./wallet-service");
 const walletService = require('./wallet-service');
 const userService = require('./user-service');
-//Import sc mock
-const { CasinoTradeContract, Erc20 } = require('@wallfair.io/smart_contract_mock');
 
-const CASINO_WALLET_ADDR = process.env.WALLET_ADDR || "CASINO";
-const WALLET_INITIAL_LIQUIDITY_TO_MINT = 1000000n;
-
-const WFAIR = new Erc20('WFAIR');
-const casinoContract = new CasinoTradeContract(CASINO_WALLET_ADDR);
 // configure passport to use JWT strategy with KEY provide via environment variable
 // the secret key must be the same as the one used in the main application
 passport.use('jwt',
@@ -113,7 +106,7 @@ server.get('/api/current', async (req, res) => {
         gameHash,
         animationIndex,
         musicIndex,
-        bgIndex,
+        bgIndex
     } = await rdsGet(redis, GAME_ID);
 
     const {currentBets, upcomingBets, cashedOutBets} = await casinoContract.getBets(gameHash)
@@ -121,7 +114,7 @@ server.get('/api/current', async (req, res) => {
     const userIds = [...currentBets, ...upcomingBets, ...cashedOutBets].map(b => b.userid)
     const users = await wallfair.models.User.find({_id: {$in: [userIds]}}, {username: 1, _id: 1})
 
-     function normalizeBet(bet){
+    function normalizeBet(bet){
         const user = users.find(u => u._id.toString() === bet.userid)
         return {
             amount: parseInt(bet.stakedamount) / 10000,
@@ -129,7 +122,7 @@ server.get('/api/current', async (req, res) => {
             crashFactor: parseInt(bet.crashfactor),
             username: user.username
         }
-     }
+    }
 
     res.status(200).send({
         timeStarted,
@@ -219,7 +212,7 @@ server.post('/api/cashout', passport.authenticate('jwt', { session: false }), as
         ];
 
         // update storage
-         redis.hset([GAME_ID, 'cashedOutBets', JSON.stringify(bets)]);
+         redis.hmset([GAME_ID, 'cashedOutBets', JSON.stringify(bets)]);
 
         res.status(200).json({
             crashFactor,
@@ -324,7 +317,7 @@ server.post('/api/trade', passport.authenticate('jwt', { session: false }), asyn
         ];
 
         // update storage
-        redis.hset([GAME_ID, betKey, JSON.stringify(bets)]);
+        redis.hmset([GAME_ID, betKey, JSON.stringify(bets)]);
 
         res.status(200).json({});
     } catch (err) {
