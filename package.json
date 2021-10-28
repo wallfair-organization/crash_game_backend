@@ -20,8 +20,8 @@
   "author": "Wallfair.io",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
-    "@wallfair.io/smart_contract_mock": "file:../smart-contract-js-mock",
-    "@wallfair.io/wallfair-commons": "1.7.14",
+    "@wallfair.io/smart_contract_mock": "0.9.0",
+    "@wallfair.io/wallfair-commons": "1.7.18",
     "agenda": "^4.2.1",
     "cors": "^2.8.5",
     "dotenv": "^10.0.0",
