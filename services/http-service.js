@@ -26,8 +26,12 @@ const corsOptions = {
 const wallfair = require("@wallfair.io/wallfair-commons");
 
 const { agenda } = require("./schedule-service");
-const { publishEvent, notificationEvents } = require('./notification-service')
-const { checkJwt } = require("./auth0-service");
+const { publishEvent, notificationEvents } = require('./notification-service');
+
+const passport = require('passport');
+const JWTstrategy = require('passport-jwt').Strategy;
+const ExtractJWT = require('passport-jwt').ExtractJwt;
+const { passportJwtSecret } = require('jwks-rsa');
 
 const crashUtils = require("../utils/crash_utils");
 
@@ -35,6 +39,29 @@ const crashUtils = require("../utils/crash_utils");
 const GAME_NAME = process.env.GAME_NAME || "ROSI";
 const GAME_ID = process.env.GAME_ID || '614381d74f78686665a5bb76';
 const MAX_AMOUNT_PER_TRADE = process.env.MAX_AMOUNT_PER_TRADE ? parseInt(process.env.MAX_AMOUNT_PER_TRADE) : 10000;
+
+// passport as auth middleware
+passport.use('jwt',
+    new JWTstrategy(
+        {
+            secretOrKeyProvider: passportJwtSecret({
+                cache: true,
+                rateLimit: true,
+                jwksRequestsPerMinute: 5,
+                jwksUri: `https://${process.env.AUTH0_DOMAIN}/.well-known/jwks.json`,
+            }),
+            jwtFromRequest: ExtractJWT.fromAuthHeaderAsBearerToken()
+        },
+        async (token, done) => {
+            try {
+                const user = await wallfair.models.User.fineOne({ auth0Id: token.sub });
+                return done(null, user);
+            } catch (error) {
+                done(error);
+            }
+        }
+    )
+);
 
 // redis publisher used to notify others of updates
 var redis;
@@ -99,7 +126,7 @@ server.get('/api/current', async (req, res) => {
     });
 });
 
-server.post('/api/cashout', checkJwt, async (req, res) => {
+server.post('/api/cashout', passport.authenticate('jwt', { session: false }), async (req, res) => {
     try {
         const { timeStarted, gameHash, currentCrashFactor, cashedOutBets } = await rdsGet(redis, GAME_ID);
 
@@ -191,7 +218,7 @@ server.post('/api/cashout', checkJwt, async (req, res) => {
  * Route: Place a trade
  * User must have enough balance to place this trade
  */
-server.post('/api/trade', checkJwt, async (req, res) => {
+server.post('/api/trade', passport.authenticate('jwt', { session: false }), async (req, res) => {
      // TODO validate inputs properly
     let {amount, crashFactor} = req.body;
 
