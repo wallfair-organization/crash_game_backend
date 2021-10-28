@@ -254,12 +254,12 @@ server.post('/api/trade', passport.authenticate('jwt', { session: false }), asyn
         const { upcomingBets = "[]", currentBets = "[]" } = game
 
         if(game.state === 'STARTED'){
-            if (JSON.parse(upcomingBets).find(b => b.userId === req.user._id)){
-                throw new Error(`Bet already placed for user ${req.user.username}`)
+            if (JSON.parse(upcomingBets).find(b => `${b.userId}` === `${req.user._id}`)){
+                return res.status(400).send(`Bet already placed for user ${req.user.username}`)
             }
         } else {
-            if (JSON.parse(currentBets).find(b => b.userId === req.user._id)){
-                throw new Error(`Bet already placed for user ${req.user.username}`)
+            if (JSON.parse(currentBets).find(b => `${b.userId}` === `${req.user._id}`)){
+               return res.status(400).send(`Bet already placed for user ${req.user.username}`)
             }
         }
 
