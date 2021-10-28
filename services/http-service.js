@@ -382,7 +382,7 @@ server.get('/api/matches/:hash', async (req, res) => {
 
 server.get('/api/trades/lucky', async (req, res) => {
     try {
-        const trades = await casinoContract.getLuckyWins();
+        const trades = await casinoContract.getLuckyWins(24, 20);
         return res.status(200)
           .send(trades);
     } catch (err) {
@@ -395,9 +395,9 @@ server.get('/api/trades/lucky', async (req, res) => {
  * Get high wins in 24 hours
  */
 
-server.get('/api/trades/lucky', async (req, res) => {
+server.get('/api/trades/high', async (req, res) => {
     try {
-        const trades = await casinoContract.getHighWins();
+        const trades = await casinoContract.getHighWins(24, 20);
         return res.status(200)
           .send(trades);
     } catch (err) {
