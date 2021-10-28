@@ -1,5 +1,6 @@
 // create express server to run game on
 const express = require('express');
+const passport = require('passport');
 const http = require('http');
 const cors = require('cors');
 const { rdsGet } = require('../utils/redis');
@@ -23,15 +24,14 @@ const corsOptions = {
     preflightContinue: false,
 }
 
+const JWTstrategy = require('passport-jwt').Strategy;
+const ExtractJWT = require('passport-jwt').ExtractJwt;
+const { passportJwtSecret } = require('jwks-rsa');
+
 const wallfair = require("@wallfair.io/wallfair-commons");
 
 const { agenda } = require("./schedule-service");
 const { publishEvent, notificationEvents } = require('./notification-service');
-
-const passport = require('passport');
-const JWTstrategy = require('passport-jwt').Strategy;
-const ExtractJWT = require('passport-jwt').ExtractJwt;
-const { passportJwtSecret } = require('jwks-rsa');
 
 const crashUtils = require("../utils/crash_utils");
 
@@ -54,7 +54,7 @@ passport.use('jwt',
         },
         async (token, done) => {
             try {
-                const user = await wallfair.models.User.fineOne({ auth0Id: token.sub });
+                const user = await wallfair.models.User.findOne({ auth0Id: token.sub });
                 return done(null, user);
             } catch (error) {
                 done(error);
@@ -79,6 +79,10 @@ server.use(cors(corsOptions));
 
 // Giving server ability to parse json
 server.use(express.json());
+
+// Use passport
+server.use(passport.initialize());
+server.use(passport.session());
 
 /**
  * Route: Health Check
