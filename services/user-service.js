@@ -56,7 +56,21 @@ exports.checkTotalGamesPlayedAward = async (userId, gameData) => {
     const total = awardData.total = totalPlayed || 0;
     if([5, 20, 40, 60, 100].includes(total)) {
         awardData.award = WFAIR_REWARDS.totalGamesPlayed[total];
-        awardData.total = total;
+
+        //publish in universalevents collection and add tokens
+        await this.createUserAwardEvent({
+            userId,
+            awardData
+        }).catch((err)=> {
+            console.error('createUserAwardEvent', err)
+        })
+    }
+
+    //handle easter egg play rosi game 200 times
+    if(total === 200) {
+        awardData.type = "PLAY_ROSI_GAME_200_TIMES";
+        awardData.group = 'easter_egg';
+        awardData.award = WFAIR_REWARDS.easterEggs.played200TimesRosiGame;
 
         //publish in universalevents collection and add tokens
         await this.createUserAwardEvent({
@@ -92,7 +106,7 @@ exports.checkUserPlayedLastXDaysInRow = async (userId, gameData) => {
         })
 
         if(checkAwardExist.length === 0) {
-            awardData.award = WFAIR_REWARDS.playedXDaysInRow;
+            awardData.award = WFAIR_REWARDS.easterEggs.playedXDaysInRow;
             awardData.totalDaysInRow = totalDays;
             //publish in universalevents collection and add tokens
             await this.createUserAwardEvent({

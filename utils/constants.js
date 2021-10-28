@@ -7,7 +7,10 @@ const WFAIR_REWARDS = {
       60: 1000,
       100: 1500
   },
-  playedXDaysInRow: 500
+  easterEggs: {
+      playedXDaysInRow: 500,
+      played200TimesRosiGame: 500
+  }
 };
 
 module.exports = {
