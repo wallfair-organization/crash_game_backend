@@ -1,7 +1,8 @@
 const { Erc20 } = require('@wallfair.io/smart_contract_mock');
+const wallfair = require('@wallfair.io/wallfair-commons');
 
 const {WFAIR_REWARDS} = require('../utils/constants')
-const {getCasinoGamePlayCount} = require("./statistics-service");
+const {getCasinoGamePlayCount, getTotalPlayedDaysInRow} = require("./statistics-service");
 const { publishEvent, notificationEvents } = require('./notification-service')
 
 const WFAIR = new Erc20('WFAIR');
@@ -65,4 +66,53 @@ exports.checkTotalGamesPlayedAward = async (userId, gameData) => {
             console.error('createUserAwardEvent', err)
         })
     }
+}
+
+/***
+ * check user played X days in a row USER AWARD
+ * @param userId
+ * @param gameData
+ * @returns {Promise<void>} undefined
+ */
+exports.checkUserPlayedLastXDaysInRow = async (userId, gameData) => {
+    const totalDays = 6;
+    const awardData = {
+        type: `GAMES_USER_PLAYED_X_DAYS_IN_ROW`,
+        ...gameData
+    };
+
+    const totalDaysPlayed = await getTotalPlayedDaysInRow(userId, totalDays).catch((err)=> {
+        console.error('getCasinoGamePlayCount', err)
+    });
+
+    if(totalDaysPlayed.length === totalDays) {
+        //handle SET_USERNAME award
+        const checkAwardExist = await this.checkAwardExist(userId, awardData.type).catch((err)=> {
+            console.error('checkAwardExist err', err);
+        })
+
+        if(checkAwardExist.length === 0) {
+            awardData.award = WFAIR_REWARDS.playedXDaysInRow;
+            awardData.totalDaysInRow = totalDays;
+            //publish in universalevents collection and add tokens
+            await this.createUserAwardEvent({
+                userId,
+                awardData
+            }).catch((err)=> {
+                console.error('createUserAwardEvent', err)
+            })
+        }
+    }
+}
+
+/***
+ * check award exist for username and defined type
+ * @param userId
+ * @returns {Promise<void>} undefined
+ */
+exports.checkAwardExist = async (userId, type) => {
+    return wallfair.models.UniversalEvent.find({
+        userId,
+        'data.type': type
+    });
 }

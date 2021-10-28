@@ -1,6 +1,12 @@
 const models = require("@wallfair.io/wallfair-commons").models;
 const _ = require('lodash');
 
+//Import sc mock
+const { CasinoTradeContract } = require('@wallfair.io/smart_contract_mock');
+
+const CASINO_WALLET_ADDR = process.env.WALLET_ADDR || "CASINO";
+const casinoContract = new CasinoTradeContract(CASINO_WALLET_ADDR);
+
 /***
  * Get how many times user played the game by userId
  * @param userId
@@ -135,9 +141,21 @@ const getCasinoGamesAmountLost = async (userId, gameId) => {
   }
 };
 
+
+/***
+ * Get total played days in a row by user Id
+ * @param userId
+ * @param lastDays
+ * @returns {Promise<number>}
+ */
+const getTotalPlayedDaysInRow = async (userId, lastDays) => {
+  return casinoContract.getUserPlayedLastXDaysInRow(userId, lastDays);
+};
+
 module.exports = {
   getCasinoGamePlayCount,
   getCasinoGameCashoutCount,
   getCasinoGamesAmountWon,
-  getCasinoGamesAmountLost
+  getCasinoGamesAmountLost,
+  getTotalPlayedDaysInRow
 };

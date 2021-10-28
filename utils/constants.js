@@ -6,7 +6,8 @@ const WFAIR_REWARDS = {
       40: 400,
       60: 1000,
       100: 1500
-  }
+  },
+  playedXDaysInRow: 500
 };
 
 module.exports = {

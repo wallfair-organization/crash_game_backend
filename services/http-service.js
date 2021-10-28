@@ -274,12 +274,17 @@ server.post('/api/trade', passport.authenticate('jwt', { session: false }), asyn
             broadcast: true
         });
 
+        //check some user awards
         //dont wait for this one, do this in the backround
         userService.checkTotalGamesPlayedAward(req.user._id.toString(), {
             gameTypeId: GAME_ID,
             gameName: GAME_NAME
         }).catch((err)=> {
             console.error('checkTotalGamesPlayedAward', err)
+        })
+
+        userService.checkUserPlayedLastXDaysInRow(req.user._id.toString()).catch((err)=> {
+            console.error('checkUserPlayedLastXDaysInRow', err)
         })
 
         const game = await rdsGet(redis, GAME_ID);
