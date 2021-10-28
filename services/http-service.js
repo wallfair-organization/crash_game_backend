@@ -326,10 +326,49 @@ server.post('/api/trade', passport.authenticate('jwt', { session: false }), asyn
 /**
  * Route: Cancel a trade
  */
-server.delete('/api/trade', passport.authenticate('jwt', { session: false }), (req, res) => {
-    // cancel the trade
-    // ensure that proper locking is in place, also when updating balance
-    // TODO implement this
+server.delete('/api/trade', passport.authenticate('jwt', { session: false }),
+  async (req, res) => {
+    try {
+        await wallet.cancelTrade(`${req.user._id}`)
+        const {upcomingBets = "[]", inGameBets = "[]", state} = await rdsGet(redis, GAME_ID);
+
+
+        if(state === "STARTED"){
+            const bets = JSON.parse(upcomingBets).filter(b => `${b.userId}` !== `${req.user._id}`)
+            redis.hmset([GAME_ID, 'upcomingBets', JSON.stringify(bets)]);
+        } else {
+            const bets = JSON.parse(inGameBets).filter(b => `${b.userId}` !== `${req.user._id}`)
+            redis.hmset([GAME_ID, 'inGameBets', JSON.stringify(bets)]);
+        }
+
+        const pubData = {
+            gameTypeId: GAME_ID,
+            gameName: GAME_NAME,
+            username: req.user.username,
+            userId: req.user._id,
+            updatedAt: Date.now()
+        };
+
+        // notify users
+        redis.publish('message', JSON.stringify({
+            to: GAME_ID,
+            event: "CASINO_CANCEL",
+            data: pubData
+        }));
+
+        // save and publish message for uniEvent
+        publishEvent(notificationEvents.EVENT_CASINO_CANCEL_BET, {
+            producer: 'user',
+            producerId: req.user._id,
+            data: pubData,
+            broadcast: true
+        });
+
+        res.status(200).send()
+    } catch (err){
+        console.error(err);
+        res.status(500).send(err);
+    }
 });
 
 // Export methods to start/stop app server
