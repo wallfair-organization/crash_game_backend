@@ -246,6 +246,40 @@ server.post('/api/trade', passport.authenticate('jwt', { session: false }), asyn
     }
 
     try {
+        const game = await rdsGet(redis, GAME_ID);
+
+        // determine if bet is in the current or next game
+        const betKey = game.state === 'STARTED' ? 'upcomingBets' : 'currentBets';
+
+        const { upcomingBets = "[]", currentBets = "[]" } = game
+
+        if(game.state === 'STARTED'){
+            if (JSON.parse(upcomingBets).find(b => b.userId === req.user._id)){
+                throw new Error(`Bet already placed for user ${req.user.username}`)
+            }
+        } else {
+            if (JSON.parse(currentBets).find(b => b.userId === req.user._id)){
+                throw new Error(`Bet already placed for user ${req.user.username}`)
+            }
+        }
+
+        // initalize current or upcoming bets if empty
+        const existingBets = !!game[betKey] ? JSON.parse(game[betKey]) : [];
+
+        // push new bet to existing bets
+        const bets = [
+            ...existingBets,
+            {
+                amount,
+                crashFactor,
+                username: req.user.username,
+                userId: req.user._id
+            }
+        ];
+
+        // update storage
+        redis.hmset([GAME_ID, betKey, JSON.stringify(bets)]);
+
         // decrease wallet amount
         await wallet.placeTrade(req.user._id, amount, crashFactor);
 
@@ -281,28 +315,6 @@ server.post('/api/trade', passport.authenticate('jwt', { session: false }), asyn
         }).catch((err)=> {
             console.error('checkTotalGamesPlayedAward', err)
         })
-
-        const game = await rdsGet(redis, GAME_ID);
-
-        // determine if bet is in the current or next game
-        const betKey = game.state === 'STARTED' ? 'upcomingBets' : 'currentBets';
-
-        // initalize current or upcoming bets if empty
-        const existingBets = !!game[betKey] ? JSON.parse(game[betKey]) : [];
-
-        // push new bet to existing bets
-        const bets = [
-            ...existingBets,
-            {
-                amount,
-                crashFactor,
-                username: req.user.username,
-                userId: req.user._id
-            }
-        ];
-
-        // update storage
-        redis.hmset([GAME_ID, betKey, JSON.stringify(bets)]);
 
         res.status(200).json({});
     } catch (err) {
