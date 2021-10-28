@@ -263,6 +263,9 @@ server.post('/api/trade', passport.authenticate('jwt', { session: false }), asyn
             }
         }
 
+        // decrease wallet amount
+        await wallet.placeTrade(req.user._id, amount, crashFactor);
+
         // initalize current or upcoming bets if empty
         const existingBets = !!game[betKey] ? JSON.parse(game[betKey]) : [];
 
@@ -279,9 +282,6 @@ server.post('/api/trade', passport.authenticate('jwt', { session: false }), asyn
 
         // update storage
         redis.hmset([GAME_ID, betKey, JSON.stringify(bets)]);
-
-        // decrease wallet amount
-        await wallet.placeTrade(req.user._id, amount, crashFactor);
 
         const pubData = {
             gameTypeId: GAME_ID,
