@@ -368,7 +368,7 @@ server.get('/api/matches/:hash', async (req, res) => {
     try {
         const { hash } = req.params;
         const match = await casinoContract.getMatchByHash(hash);
-        const bets = await casinoContract.getTradesByGameHashSorted(hash);
+        const bets = await casinoContract.getAllTradesByGameHash(hash);
         return res.status(200).send({
             match,
             bets
@@ -390,7 +390,7 @@ server.get('/api/matches/:hash/next', async (req, res) => {
         const nextMatch = await casinoContract.getNextMatchByGameHash(hash);
         const match = nextMatch ? nextMatch[0] : {};
 
-        const bets = await casinoContract.getTradesByGameHashSorted(match?.gamehash);
+        const bets = await casinoContract.getAllTradesByGameHash(match?.gamehash);
         return res.status(200).send({
             match,
             bets
@@ -412,7 +412,7 @@ server.get('/api/matches/:hash/prev', async (req, res) => {
         const nextMatch = await casinoContract.getPrevMatchByGameHash(hash);
         const match = nextMatch ? nextMatch[0] : {};
 
-        const bets = await casinoContract.getTradesByGameHashSorted(match?.gamehash);
+        const bets = await casinoContract.getAllTradesByGameHash(match?.gamehash);
         return res.status(200).send({
             match,
             bets
