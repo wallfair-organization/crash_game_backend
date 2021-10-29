@@ -370,7 +370,7 @@ server.get('/api/matches/:hash', async (req, res) => {
         const match = await casinoContract.getMatchByHash(hash);
         const bets = await casinoContract.getAllTradesByGameHash(hash);
         return res.status(200).send({
-            match,
+            match: match ? match[0] : {},
             bets
         });
     } catch (err) {
