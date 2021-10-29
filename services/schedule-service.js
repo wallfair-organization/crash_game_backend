@@ -238,7 +238,7 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
     ]);
 
     //init single agenda job for update casino matches with 2 seconds delay
-    //await agenda.schedule("in 2 seconds", ["update casino matches"], null);
+    await agenda.schedule("in 2 seconds", ["update casino matches"], null);
 });
 
 agenda.define("update casino matches", async (job) => {
