@@ -361,14 +361,18 @@ server.get('/api/matches', async (req, res) => {
 })
 
 /**
- * Get last 10 matches
+ * Get match details based on gameHash, including all bets from casino_trades
  */
 
 server.get('/api/matches/:hash', async (req, res) => {
     try {
         const { hash } = req.params;
         const match = await casinoContract.getMatchByHash(hash);
-        return res.status(200).send(match);
+        const bets = await casinoContract.getTradesByGameHashSorted(hash);
+        return res.status(200).send({
+            match,
+            bets
+        });
     } catch (err) {
         console.log("PARAMS:", req.params);
         console.log(err);
