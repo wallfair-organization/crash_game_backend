@@ -46,7 +46,11 @@ var redis;
 const wallet = require("./wallet-service");
 const walletService = require('./wallet-service');
 const userService = require('./user-service');
+//Import sc mock
+const { CasinoTradeContract, Erc20 } = require('@wallfair.io/smart_contract_mock');
 
+const CASINO_WALLET_ADDR = process.env.WALLET_ADDR || "CASINO";
+const casinoContract = new CasinoTradeContract(CASINO_WALLET_ADDR);
 // configure passport to use JWT strategy with KEY provide via environment variable
 // the secret key must be the same as the one used in the main application
 passport.use('jwt',
@@ -94,28 +98,43 @@ server.get('/', (req, res) => {
 server.get('/api/current', async (req, res) => {
     // retrieve the last 10 jobs and extract crashFactor from them
     const lastGames = await agenda.jobs({name: "crashgame_end"}, {lastFinishedAt: -1}, 10, 0);
-    const lastCrashes = lastGames.map(lc => lc.attrs.data.crashFactor);
+    const lastCrashes = lastGames.map(lc => ({
+        crashFactor: lc.attrs.data.crashFactor,
+        gameHash: lc.attrs.data.gameHash
+    }));
 
     // read info from redis
     const { timeStarted,
         nextGameAt,
         state,
-        currentBets,
-        upcomingBets,
         gameHash,
-        cashedOutBets,
         animationIndex,
         musicIndex,
-        bgIndex,
+        bgIndex
     } = await rdsGet(redis, GAME_ID);
+
+    const {currentBets, upcomingBets, cashedOutBets} = await casinoContract.getBets(gameHash)
+
+    const userIds = [...currentBets, ...upcomingBets, ...cashedOutBets].map(b => b.userid)
+    const users = await wallfair.models.User.find({_id: {$in: [userIds]}}, {username: 1, _id: 1})
+
+    function normalizeBet(bet){
+        const user = users.find(u => u._id.toString() === bet.userid)
+        return {
+            amount: parseInt(bet.stakedamount) / 10000,
+            userId: bet.userid,
+            crashFactor: parseInt(bet.crashfactor),
+            username: user.username
+        }
+    }
 
     res.status(200).send({
         timeStarted,
         nextGameAt: state === 'STARTED' ? null : nextGameAt,
         state,
-        currentBets: currentBets ? JSON.parse(currentBets) : [],
-        upcomingBets: upcomingBets ? JSON.parse(upcomingBets) : [],
-        cashedOutBets: cashedOutBets ? JSON.parse(cashedOutBets) : [],
+        currentBets: currentBets ? currentBets.map(normalizeBet) : [],
+        upcomingBets: upcomingBets ? upcomingBets.map(normalizeBet) : [],
+        cashedOutBets: cashedOutBets ? cashedOutBets.map(normalizeBet) : [],
         lastCrashes,
         gameId: gameHash,
         gameHash,
@@ -371,6 +390,122 @@ server.delete('/api/trade', passport.authenticate('jwt', { session: false }),
     }
 });
 
+
+/**
+ * Get matches
+ */
+
+server.get('/api/matches', async (req, res) => {
+    try {
+        const {
+            page = 1,
+            perPage = 10
+        } = req.query;
+        const matches = await casinoContract.getMatches(page, perPage, GAME_ID);
+        return res.status(200)
+          .send(matches)
+    } catch (err) {
+        console.log('QUERY:', req.query);
+        console.log(err);
+        res.status(500).send(err);
+    }
+})
+
+/**
+ * Get match details based on gameHash, including all bets from casino_trades
+ */
+
+server.get('/api/matches/:hash', async (req, res) => {
+    try {
+        const { hash } = req.params;
+        const match = await casinoContract.getMatchByHash(hash);
+        const bets = await casinoContract.getAllTradesByGameHash(hash);
+        return res.status(200).send({
+            match: match ? match[0] : {},
+            bets
+        });
+    } catch (err) {
+        console.log("PARAMS:", req.params);
+        console.log(err);
+        res.status(500).send(err);
+    }
+})
+
+/**
+ * Get next game based on current gameHash
+ */
+
+server.get('/api/matches/:hash/next', async (req, res) => {
+    try {
+        const { hash } = req.params;
+        const nextMatch = await casinoContract.getNextMatchByGameHash(hash);
+        const match = nextMatch ? nextMatch[0] : {};
+
+        const bets = await casinoContract.getAllTradesByGameHash(match?.gamehash);
+        return res.status(200).send({
+            match,
+            bets
+        });
+    } catch (err) {
+        console.log("PARAMS:", req.params);
+        console.log(err);
+        res.status(500).send(err);
+    }
+})
+
+/**
+ * Get prev game based on current gameHash
+ */
+
+server.get('/api/matches/:hash/prev', async (req, res) => {
+    try {
+        const { hash } = req.params;
+        const nextMatch = await casinoContract.getPrevMatchByGameHash(hash);
+        const match = nextMatch ? nextMatch[0] : {};
+
+        const bets = await casinoContract.getAllTradesByGameHash(match?.gamehash);
+        return res.status(200).send({
+            match,
+            bets
+        });
+    } catch (err) {
+        console.log("PARAMS:", req.params);
+        console.log(err);
+        res.status(500).send(err);
+    }
+})
+
+/**
+ * Get luckies wins in 24 hours
+ */
+
+server.get('/api/trades/lucky', async (req, res) => {
+    try {
+        const trades = await casinoContract.getLuckyWins(24, 20);
+        return res.status(200)
+          .send(trades);
+    } catch (err) {
+        console.log(err);
+        res.status(500).send(err);
+    }
+})
+
+/**
+ * Get high wins in 24 hours
+ */
+
+server.get('/api/trades/high', async (req, res) => {
+    try {
+        const trades = await casinoContract.getHighWins(24, 20);
+        return res.status(200)
+          .send(trades);
+    } catch (err) {
+        console.log(err);
+        res.status(500).send(err);
+    }
+})
+
+
 // Export methods to start/stop app server
 var appServer;
 module.exports = {
@@ -391,3 +526,5 @@ module.exports = {
         }
     }
 }
+
+
