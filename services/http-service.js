@@ -3,6 +3,7 @@ const passport = require('passport');
 const express = require('express');
 const http    = require('http');
 const cors    = require('cors');
+const mongoose = require('mongoose')
 const { rdsGet } = require('../utils/redis');
 const corsOptions = {
     origin: ["wallfair.io",
@@ -114,9 +115,10 @@ server.get('/api/current', async (req, res) => {
     } = await rdsGet(redis, GAME_ID);
 
     const {currentBets, upcomingBets, cashedOutBets} = await casinoContract.getBets(gameHash)
+    const userIds = [...currentBets, ...upcomingBets, ...cashedOutBets]
+      .map(b => mongoose.Types.ObjectId(b.userid))
 
-    const userIds = [...currentBets, ...upcomingBets, ...cashedOutBets].map(b => b.userid)
-    const users = await wallfair.models.User.find({_id: {$in: [userIds]}}, {username: 1, _id: 1})
+    const users = await wallfair.models.User.find({_id: {$in: [...userIds]}}, {username: 1, _id: 1})
 
     function normalizeBet(bet){
         const user = users.find(u => u._id.toString() === bet.userid)
