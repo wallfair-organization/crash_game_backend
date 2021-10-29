@@ -3,6 +3,7 @@ const Agenda = require("agenda");
 const agenda = new Agenda({ db: { address: process.env.DB_CONNECTION } });
 
 const { rdsGet } = require('../utils/redis');
+const { updateCasinoMatches } = require('../jobs/general-jobs');
 
 // define constants that can be overriden in .env
 const GAME_INTERVAL_IN_SECONDS = process.env.GAME_INTERVAL_IN_SECONDS || 5;
@@ -25,6 +26,9 @@ const wallet = require("./wallet-service");
 
 const ONE = 10000n;
 const GAME_ID = process.env.GAME_ID || '614381d74f78686665a5bb76';
+
+//Import sc mock
+const { CasinoTradeContract, Erc20 } = require('@wallfair.io/smart_contract_mock');
 
 /**
  * Method for starting the game.
@@ -232,6 +236,13 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
         "gameHash", "",
         "currentCrashFactor", ""
     ]);
+
+    //init single agenda job for update casino matches with 2 seconds delay
+    await agenda.schedule("in 2 seconds", ["update casino matches"], null);
+});
+
+agenda.define("update casino matches", async (job) => {
+    await updateCasinoMatches();
 });
 
 /**
