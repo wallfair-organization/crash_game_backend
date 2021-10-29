@@ -381,6 +381,50 @@ server.get('/api/matches/:hash', async (req, res) => {
 })
 
 /**
+ * Get next game based on current gameHash
+ */
+
+server.get('/api/matches/:hash/next', async (req, res) => {
+    try {
+        const { hash } = req.params;
+        const nextMatch = await casinoContract.getNextMatchByGameHash(hash);
+        const match = nextMatch ? nextMatch[0] : {};
+
+        const bets = await casinoContract.getTradesByGameHashSorted(match?.gameHash);
+        return res.status(200).send({
+            match,
+            bets
+        });
+    } catch (err) {
+        console.log("PARAMS:", req.params);
+        console.log(err);
+        res.status(500).send(err);
+    }
+})
+
+/**
+ * Get prev game based on current gameHash
+ */
+
+server.get('/api/matches/:hash/prev', async (req, res) => {
+    try {
+        const { hash } = req.params;
+        const nextMatch = await casinoContract.getPrevMatchByGameHash(hash);
+        const match = nextMatch ? nextMatch[0] : {};
+
+        const bets = await casinoContract.getTradesByGameHashSorted(match?.gameHash);
+        return res.status(200).send({
+            match,
+            bets
+        });
+    } catch (err) {
+        console.log("PARAMS:", req.params);
+        console.log(err);
+        res.status(500).send(err);
+    }
+})
+
+/**
  * Get luckies wins in 24 hours
  */
 
