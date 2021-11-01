@@ -251,7 +251,7 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
 agenda.define("game_close", async (job) => {
     const {gameHash, crashFactor} = job.attrs.data;
 
-    //Set proper state (3) and crash factor for all user lost
+    //Set proper state (3) and crash factor for all lost user trades in casino_trades table
     const lostTrades = await casinoContract.setLostTrades(gameHash.toString(), crashFactor).catch((err) => {
         console.error(`setLostTradesByGameHash failed ${gameHash}`, err);
     })
