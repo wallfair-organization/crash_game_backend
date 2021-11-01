@@ -246,13 +246,12 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
 });
 
 /**
- * Calculate proper values: amountinvestedsum, amountrewardedsum, numtrades, numcashouts and set them in casino_matches table, after game ends
- * Set proper state and crash factor for all user lost
+ * This method will trigger in the background, after each game ends
  */
 agenda.define("game_close", async (job) => {
     const {gameHash, crashFactor} = job.attrs.data;
 
-    //set lost trades
+    //Set proper state (3) and crash factor for all user lost
     const lostTrades = await casinoContract.setLostTrades(gameHash.toString(), crashFactor).catch((err) => {
         console.error(`setLostTradesByGameHash failed ${gameHash}`, err);
     })
@@ -284,7 +283,7 @@ agenda.define("game_close", async (job) => {
         })
     }
 
-    //set casino_matches
+    //Calculate proper values: amountinvestedsum, amountrewardedsum, numtrades, numcashouts and set them in casino_matches table
     const matchesToUpdate = await casinoContract.getMatchesForUpdateMissingValues().catch((err) => {
         console.error('getMatchesForUpdateMissingValues failed', err);
     })
