@@ -16,4 +16,12 @@ const updateCasinoMatches = async () => {
     }
 };
 
+
+const setLostTradesByGameHash = async (gameHash, crashFactor) => {
+    await casinoContract.setLostTrades(gameHash.toString(), crashFactor).catch((err)=> {
+        console.error('setLostTradesByGameHash failed', err);
+    })
+};
+
 exports.updateCasinoMatches = updateCasinoMatches;
+exports.setLostTradesByGameHash = setLostTradesByGameHash;
