@@ -237,26 +237,22 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
         "currentCrashFactor", ""
     ]);
 
-    //init single agenda job for update casino matches with 2 seconds delay
-    await agenda.schedule("in 1 seconds", ["update casino matches"], null);
-
-    //init update lost games with proper state and crash factor
-    await agenda.schedule("in 2 seconds", ["set lost games casino trades"], {crashFactor, gameHash});
+    //init single agenda job for current game close
+    await agenda.schedule("in 1 seconds", ["close current game"], {crashFactor, gameHash});
 });
 
 /**
  * Calculate proper values: amountinvestedsum, amountrewardedsum, numtrades, numcashouts and set them in casino_matches table, after game ends
- */
-agenda.define("update casino matches", async (job) => {
-    await updateCasinoMatches();
-});
-
-/**
  * Set proper state and crash factor for all user lost
  */
-agenda.define("set lost games casino trades", async (job) => {
+agenda.define("close current game", async (job) => {
     const {gameHash, crashFactor} = job.attrs.data;
-    await setLostTradesByGameHash(gameHash, crashFactor);
+
+    await setLostTradesByGameHash(gameHash, crashFactor, redis).catch((err)=> {
+        console.error('err', err);
+    });
+
+    await updateCasinoMatches();
 });
 
 /**
