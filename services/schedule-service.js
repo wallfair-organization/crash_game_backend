@@ -3,7 +3,6 @@ const Agenda = require("agenda");
 const agenda = new Agenda({ db: { address: process.env.DB_CONNECTION } });
 
 const { rdsGet } = require('../utils/redis');
-const { updateCasinoMatches, setLostTradesByGameHash } = require('../jobs/general-jobs');
 
 // define constants that can be overriden in .env
 const GAME_INTERVAL_IN_SECONDS = process.env.GAME_INTERVAL_IN_SECONDS || 5;
@@ -29,6 +28,11 @@ const GAME_ID = process.env.GAME_ID || '614381d74f78686665a5bb76';
 
 //Import sc mock
 const { CasinoTradeContract, Erc20 } = require('@wallfair.io/smart_contract_mock');
+
+const {publishEvent, notificationEvents} = require("../services/notification-service");
+
+const CASINO_WALLET_ADDR = process.env.WALLET_ADDR || "CASINO";
+const casinoContract = new CasinoTradeContract(CASINO_WALLET_ADDR);
 
 /**
  * Method for starting the game.
@@ -248,11 +252,49 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
 agenda.define("game_close", async (job) => {
     const {gameHash, crashFactor} = job.attrs.data;
 
-    await setLostTradesByGameHash(gameHash, crashFactor, redis).catch((err)=> {
-        console.error('err', err);
-    });
+    //set lost trades
+    const lostTrades = await casinoContract.setLostTrades(gameHash.toString(), crashFactor).catch((err) => {
+        console.error(`setLostTradesByGameHash failed ${gameHash}`, err);
+    })
 
-    await updateCasinoMatches();
+    if(lostTrades && lostTrades.length) {
+        lostTrades.forEach((trade) => {
+            let stakedAmount = parseInt(trade.stakedamount) / Number(ONE);
+
+            const payload = {
+                crashFactor,
+                gameHash: gameHash,
+                gameName: GAME_NAME,
+                stakedAmount,
+                userId: trade.userid,
+            };
+
+            redis.publish('message', JSON.stringify({
+                to: trade.userid,
+                event: "CASINO_LOST",
+                data: payload
+            }));
+
+            publishEvent(notificationEvents.EVENT_CASINO_LOST, {
+                producer: 'user',
+                producerId: trade.userid,
+                data: payload,
+                broadcast: true
+            });
+        })
+    }
+
+    //set casino_matches
+    const matchesToUpdate = await casinoContract.getMatchesForUpdateMissingValues().catch((err) => {
+        console.error('getMatchesForUpdateMissingValues failed', err);
+    })
+
+    for (const match of matchesToUpdate) {
+        const gameHash = match?.gamehash;
+        await casinoContract.updateMatchesMissingValues(gameHash).catch((err) => {
+            console.error('updateMatchesMissingValues failed', err);
+        })
+    }
 });
 
 /**
