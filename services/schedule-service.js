@@ -237,20 +237,25 @@ agenda.define("game_close", async (job) => {
                 gameName: GAME_NAME,
                 stakedAmount,
                 userId: trade.userid,
-            };
+            };MVP2-658
 
-            redis.publish('message', JSON.stringify({
-                to: trade.userid,
+
+
+            amqp.send('crash_game', 'casino.lost', JSON.stringify({
+                to: GAME_ID,
                 event: "CASINO_LOST",
-                data: payload
-            }));
+                ...payload
+            }))
 
-            publishEvent(notificationEvents.EVENT_CASINO_LOST, {
+            // publish message for uniEvent
+            amqp.send('universal_events', 'casino.lost', JSON.stringify({
+                event: notificationEvents.EVENT_CASINO_LOST,
                 producer: 'user',
-                producerId: trade.userid,
+                producerId: payload.userId,
                 data: payload,
+                date: Date.now(),
                 broadcast: true
-            });
+            }))
         })
     }
 
