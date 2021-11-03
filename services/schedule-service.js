@@ -30,6 +30,8 @@ const GAME_ID = process.env.GAME_ID || '614381d74f78686665a5bb76';
 const { CasinoTradeContract, Erc20 } = require('@wallfair.io/smart_contract_mock');
 
 const {publishEvent, notificationEvents} = require("../services/notification-service");
+const mongoose = require("mongoose");
+const wallfair = require("@wallfair.io/wallfair-commons");
 
 const CASINO_WALLET_ADDR = process.env.WALLET_ADDR || "CASINO";
 const casinoContract = new CasinoTradeContract(CASINO_WALLET_ADDR);
@@ -242,7 +244,7 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
     ]);
 
     //init single agenda job for current game close
-    await agenda.schedule("in 1 seconds", ["game_close"], {crashFactor, gameHash});
+    await agenda.schedule("in 2 seconds", ["game_close"], {crashFactor, gameHash});
 });
 
 /**
@@ -257,8 +259,12 @@ agenda.define("game_close", async (job) => {
     })
 
     if(lostTrades && lostTrades.length) {
+        const userIds = [...lostTrades].map(b => mongoose.Types.ObjectId(b.userid));
+        const users = await wallfair.models.User.find({_id: {$in: [...userIds]}}, {username: 1, _id: 1})
+
         lostTrades.forEach((trade) => {
             let stakedAmount = parseInt(trade.stakedamount) / Number(ONE);
+            const user = users.find(u => u._id.toString() === trade.userid);
 
             const payload = {
                 crashFactor,
@@ -266,6 +272,7 @@ agenda.define("game_close", async (job) => {
                 gameName: GAME_NAME,
                 stakedAmount,
                 userId: trade.userid,
+                username: user?.username
             };
 
             redis.publish('message', JSON.stringify({
