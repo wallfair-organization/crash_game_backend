@@ -492,9 +492,14 @@ server.get('/api/trades/lucky', async (req, res) => {
         const trades = await casinoContract.getLuckyWins(24, 20);
 
         if(trades && trades.length) {
+            const userIds = [...trades].map(b => mongoose.Types.ObjectId(b.userid));
+            const users = await wallfair.models.User.find({_id: {$in: [...userIds]}}, {username: 1, _id: 1})
+
             trades.map((item) => {
+                const user = users.find(u => u._id.toString() === item.userid);
                 const stakedAmount = item.stakedamount;
                 item.stakedamount = fromScaledBigInt(stakedAmount);
+                item.username = user?.username;
                 return item;
             })
         }
@@ -516,9 +521,14 @@ server.get('/api/trades/high', async (req, res) => {
         const trades = await casinoContract.getHighWins(24, 20);
 
         if(trades && trades.length) {
+            const userIds = [...trades].map(b => mongoose.Types.ObjectId(b.userid));
+            const users = await wallfair.models.User.find({_id: {$in: [...userIds]}}, {username: 1, _id: 1})
+
             trades.map((item) => {
+                const user = users.find(u => u._id.toString() === item.userid);
                 const stakedAmount = item.stakedamount;
                 item.stakedamount = fromScaledBigInt(stakedAmount);
+                item.username = user?.username;
                 return item;
             })
         }
