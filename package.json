@@ -23,6 +23,7 @@
     "@wallfair.io/wallfair-commons": "1.7.19",
     "@wallfair.io/smart_contract_mock": "0.10.0",
     "agenda": "^4.2.1",
+    "bignumber.js": "^9.0.1",
     "cors": "^2.8.5",
     "dotenv": "^10.0.0",
     "express": "^4.17.1",

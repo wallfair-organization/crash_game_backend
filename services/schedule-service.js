@@ -3,7 +3,6 @@ const Agenda = require("agenda");
 const agenda = new Agenda({ db: { address: process.env.DB_CONNECTION, collection: `${process.env.GAME_NAME}_jobs` } });
 
 const { rdsGet } = require('../utils/redis');
-const { updateCasinoMatches } = require('../jobs/general-jobs');
 
 if(!process.env.GAME_ID) throw 'No GAME_ID found. Please specify GAME_ID as environment variable'
 // define constants that can be overriden in .env
@@ -30,6 +29,11 @@ const GAME_ID = process.env.GAME_ID;
 
 //Import sc mock
 const { CasinoTradeContract, Erc20 } = require('@wallfair.io/smart_contract_mock');
+
+const {publishEvent, notificationEvents} = require("../services/notification-service");
+
+const CASINO_WALLET_ADDR = process.env.WALLET_ADDR || "CASINO";
+const casinoContract = new CasinoTradeContract(CASINO_WALLET_ADDR);
 
 /**
  * Method for starting the game.
@@ -238,12 +242,59 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
         "currentCrashFactor", ""
     ]);
 
-    //init single agenda job for update casino matches with 2 seconds delay
-    await agenda.schedule("in 2 seconds", ["update casino matches"], null);
+    //init single agenda job for current game close
+    await agenda.schedule("in 1 seconds", ["game_close"], {crashFactor, gameHash});
 });
 
-agenda.define("update casino matches", async (job) => {
-    await updateCasinoMatches();
+/**
+ * This method will trigger in the background, after each game ends
+ */
+agenda.define("game_close", async (job) => {
+    const {gameHash, crashFactor} = job.attrs.data;
+
+    //Set proper state (3) and crash factor for all lost user trades in casino_trades table
+    const lostTrades = await casinoContract.setLostTrades(gameHash.toString(), crashFactor).catch((err) => {
+        console.error(`setLostTradesByGameHash failed ${gameHash}`, err);
+    })
+
+    if(lostTrades && lostTrades.length) {
+        lostTrades.forEach((trade) => {
+            let stakedAmount = parseInt(trade.stakedamount) / Number(ONE);
+
+            const payload = {
+                crashFactor,
+                gameHash: gameHash,
+                gameName: GAME_NAME,
+                stakedAmount,
+                userId: trade.userid,
+            };
+
+            redis.publish('message', JSON.stringify({
+                to: trade.userid,
+                event: "CASINO_LOST",
+                data: payload
+            }));
+
+            publishEvent(notificationEvents.EVENT_CASINO_LOST, {
+                producer: 'user',
+                producerId: trade.userid,
+                data: payload,
+                broadcast: true
+            });
+        })
+    }
+
+    //Calculate proper values: amountinvestedsum, amountrewardedsum, numtrades, numcashouts and set them in casino_matches table
+    const matchesToUpdate = await casinoContract.getMatchesForUpdateMissingValues().catch((err) => {
+        console.error('getMatchesForUpdateMissingValues failed', err);
+    })
+
+    for (const match of matchesToUpdate) {
+        const gameHash = match?.gamehash;
+        await casinoContract.updateMatchesMissingValues(gameHash).catch((err) => {
+            console.error('updateMatchesMissingValues failed', err);
+        })
+    }
 });
 
 /**
