@@ -15,7 +15,7 @@ module.exports = {
     },
 
     placeTrade: async (userId, amount, crashFactor) => {
-        await casinoContract.placeTrade(userId.toString(), BigInt(amount) * WFAIR.ONE, crashFactor);
+        await casinoContract.placeTrade(userId.toString(), BigInt(amount) * WFAIR.ONE, crashFactor, process.env.GAME_ID);
 
         // store an open trade and leave it open for the next game to grab
         console.log(new Date(), `User ${userId} placed traded of ${amount} WFAIR on a crash factor of ${crashFactor}`);
@@ -23,9 +23,9 @@ module.exports = {
 
     cancelTrade: async (userId) => {
         // cancels an open trade that hasn't been grabbed yet
-        const openTrades = await casinoContract.getCasinoTradesByUserIdAndStates(userId, [CASINO_TRADE_STATE.OPEN])
-        if(openTrades.length){
-            return casinoContract.cancelTrade(userId, openTrades[0])
+        const openTrade = await casinoContract.getOpenTrade(userId, process.env.GAME_ID)
+        if(openTrade){
+            return casinoContract.cancelTrade(userId, openTrade)
         } else {
             throw 'No open trades to cancel'
         }
