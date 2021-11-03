@@ -1,6 +1,6 @@
 // create scheduling tool
 const Agenda = require("agenda");
-const agenda = new Agenda({ db: { address: process.env.DB_CONNECTION, collection: `${process.env.GAME_ID}_jobs` } });
+const agenda = new Agenda({ db: { address: process.env.DB_CONNECTION, collection: `${process.env.GAME_NAME}_jobs` } });
 
 const { rdsGet } = require('../utils/redis');
 const { updateCasinoMatches } = require('../jobs/general-jobs');
