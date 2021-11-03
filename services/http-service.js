@@ -116,7 +116,7 @@ server.get('/api/current', async (req, res) => {
     const {currentBets, upcomingBets, cashedOutBets} = await casinoContract.getBets(gameHash)
 
     const userIds = [...currentBets, ...upcomingBets, ...cashedOutBets].map(b => b.userid)
-    const users = await wallfair.models.User.find({_id: {$in: [userIds]}}, {username: 1, _id: 1})
+    const users = await wallfair.models.User.find({_id: {$in: [...userIds]}}, {username: 1, _id: 1})
 
     function normalizeBet(bet){
         const user = users.find(u => u._id.toString() === bet.userid)
@@ -438,7 +438,7 @@ server.get('/api/matches/:hash', async (req, res) => {
 server.get('/api/matches/:hash/next', async (req, res) => {
     try {
         const { hash } = req.params;
-        const nextMatch = await casinoContract.getNextMatchByGameHash(hash);
+        const nextMatch = await casinoContract.getNextMatchByGameHash(hash, GAME_ID);
         const match = nextMatch ? nextMatch[0] : {};
 
         const bets = await casinoContract.getAllTradesByGameHash(match?.gamehash);
@@ -460,7 +460,7 @@ server.get('/api/matches/:hash/next', async (req, res) => {
 server.get('/api/matches/:hash/prev', async (req, res) => {
     try {
         const { hash } = req.params;
-        const nextMatch = await casinoContract.getPrevMatchByGameHash(hash);
+        const nextMatch = await casinoContract.getPrevMatchByGameHash(hash, GAME_ID);
         const match = nextMatch ? nextMatch[0] : {};
 
         const bets = await casinoContract.getAllTradesByGameHash(match?.gamehash);
@@ -481,7 +481,7 @@ server.get('/api/matches/:hash/prev', async (req, res) => {
 
 server.get('/api/trades/lucky', async (req, res) => {
     try {
-        const trades = await casinoContract.getLuckyWins(24, 20);
+        const trades = await casinoContract.getLuckyWins(24, 20, GAME_ID);
         return res.status(200)
           .send(trades);
     } catch (err) {
@@ -496,7 +496,7 @@ server.get('/api/trades/lucky', async (req, res) => {
 
 server.get('/api/trades/high', async (req, res) => {
     try {
-        const trades = await casinoContract.getHighWins(24, 20);
+        const trades = await casinoContract.getHighWins(24, 20, GAME_ID);
         return res.status(200)
           .send(trades);
     } catch (err) {
