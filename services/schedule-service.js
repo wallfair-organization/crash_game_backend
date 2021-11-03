@@ -31,7 +31,7 @@ const GAME_ID = process.env.GAME_ID || '614381d74f78686665a5bb76';
 //Import sc mock
 const { CasinoTradeContract, Erc20 } = require('@wallfair.io/smart_contract_mock');
 
-const {publishEvent, notificationEvents} = require("../services/notification-service");
+const { notificationEvents } = require("@wallfair.io/wallfair-commons/constants/eventTypes");
 
 const CASINO_WALLET_ADDR = process.env.WALLET_ADDR || "CASINO";
 const casinoContract = new CasinoTradeContract(CASINO_WALLET_ADDR);
