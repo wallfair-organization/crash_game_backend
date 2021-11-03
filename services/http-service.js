@@ -378,20 +378,24 @@ server.delete('/api/trade', passport.authenticate('jwt', { session: false }),
             updatedAt: Date.now()
         };
 
+
+
         // notify users
-        redis.publish('message', JSON.stringify({
+        amqp.send('crash_game', 'casino.cancel', JSON.stringify({
             to: GAME_ID,
             event: "CASINO_CANCEL",
-            data: pubData
-        }));
+            ...pubData
+        }))
 
-        // save and publish message for uniEvent
-        publishEvent(notificationEvents.EVENT_CASINO_CANCEL_BET, {
+        // publish message for uniEvent
+        amqp.send('universal_events', 'casino.cancel', JSON.stringify({
+            event: notificationEvents.EVENT_CASINO_CANCEL_BET,
             producer: 'user',
             producerId: req.user._id,
             data: pubData,
-            broadcast: true
-        });
+            broadcast: true,
+            date: Date.now()
+        }))
 
         res.status(200).send()
     } catch (err){
