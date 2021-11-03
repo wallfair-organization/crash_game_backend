@@ -25,6 +25,8 @@ const corsOptions = {
     preflightContinue: false,
 }
 
+const {fromScaledBigInt} = require('../utils/number-helper')
+
 const JWTstrategy = require('passport-jwt').Strategy;
 const ExtractJWT = require('passport-jwt').ExtractJwt;
 
@@ -34,6 +36,7 @@ const { agenda } = require("./schedule-service");
 const { publishEvent, notificationEvents } = require('./notification-service')
 
 const crashUtils = require("../utils/crash_utils");
+
 
 // define constants that can be overriden in .env
 const GAME_NAME = process.env.GAME_NAME || "ROSI";
@@ -52,6 +55,9 @@ const { CasinoTradeContract, Erc20 } = require('@wallfair.io/smart_contract_mock
 
 const CASINO_WALLET_ADDR = process.env.WALLET_ADDR || "CASINO";
 const casinoContract = new CasinoTradeContract(CASINO_WALLET_ADDR);
+
+const WFAIR = new Erc20('WFAIR');
+
 // configure passport to use JWT strategy with KEY provide via environment variable
 // the secret key must be the same as the one used in the main application
 passport.use('jwt',
@@ -484,6 +490,15 @@ server.get('/api/matches/:hash/prev', async (req, res) => {
 server.get('/api/trades/lucky', async (req, res) => {
     try {
         const trades = await casinoContract.getLuckyWins(24, 20);
+
+        if(trades && trades.length) {
+            trades.map((item) => {
+                const stakedAmount = item.stakedamount;
+                item.stakedamount = fromScaledBigInt(stakedAmount);
+                return item;
+            })
+        }
+
         return res.status(200)
           .send(trades);
     } catch (err) {
@@ -499,6 +514,15 @@ server.get('/api/trades/lucky', async (req, res) => {
 server.get('/api/trades/high', async (req, res) => {
     try {
         const trades = await casinoContract.getHighWins(24, 20);
+
+        if(trades && trades.length) {
+            trades.map((item) => {
+                const stakedAmount = item.stakedamount;
+                item.stakedamount = fromScaledBigInt(stakedAmount);
+                return item;
+            })
+        }
+
         return res.status(200)
           .send(trades);
     } catch (err) {
