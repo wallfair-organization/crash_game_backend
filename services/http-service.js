@@ -280,7 +280,7 @@ server.post('/api/trade', passport.authenticate('jwt', { session: false }), asyn
 
         const { upcomingBets = "[]", currentBets = "[]" } = game
 
-        if(game.state === 'STARTED'){
+        if(game.state === 'STARTED' || game.state === "ENDED"){
             if (JSON.parse(upcomingBets).find(b => `${b.userId}` === `${req.user._id}`)){
                 return res.status(400).send(`Bet already placed for user ${req.user.username}`)
             }
@@ -360,7 +360,7 @@ server.delete('/api/trade', passport.authenticate('jwt', { session: false }),
         const {upcomingBets = "[]", inGameBets = "[]", state} = await rdsGet(redis, GAME_ID);
 
 
-        if(state === "STARTED"){
+        if(state === "STARTED" || state === "ENDED"){
             const bets = JSON.parse(upcomingBets).filter(b => `${b.userId}` !== `${req.user._id}`)
             redis.hmset([GAME_ID, 'upcomingBets', JSON.stringify(bets)]);
         } else {
