@@ -357,15 +357,14 @@ server.delete('/api/trade', passport.authenticate('jwt', { session: false }),
   async (req, res) => {
     try {
         await wallet.cancelTrade(`${req.user._id}`)
-        const {upcomingBets = "[]", inGameBets = "[]", state} = await rdsGet(redis, GAME_ID);
-
+        const {upcomingBets = "[]", currentBets = "[]", state} = await rdsGet(redis, GAME_ID);
 
         if(state === "STARTED"){
             const bets = JSON.parse(upcomingBets).filter(b => `${b.userId}` !== `${req.user._id}`)
             redis.hmset([GAME_ID, 'upcomingBets', JSON.stringify(bets)]);
         } else {
-            const bets = JSON.parse(inGameBets).filter(b => `${b.userId}` !== `${req.user._id}`)
-            redis.hmset([GAME_ID, 'inGameBets', JSON.stringify(bets)]);
+            const bets = JSON.parse(currentBets).filter(b => `${b.userId}` !== `${req.user._id}`)
+            redis.hmset([GAME_ID, 'currentBets', JSON.stringify(bets)]);
         }
 
         const pubData = {
