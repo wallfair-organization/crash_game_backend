@@ -280,7 +280,7 @@ server.post('/api/trade', passport.authenticate('jwt', { session: false }), asyn
 
         const { upcomingBets = "[]", currentBets = "[]" } = game
 
-        if(game.state === 'STARTED' || game.state === "ENDED"){
+        if(game.state === 'STARTED'){
             if (JSON.parse(upcomingBets).find(b => `${b.userId}` === `${req.user._id}`)){
                 return res.status(400).send(`Bet already placed for user ${req.user.username}`)
             }
@@ -357,15 +357,14 @@ server.delete('/api/trade', passport.authenticate('jwt', { session: false }),
   async (req, res) => {
     try {
         await wallet.cancelTrade(`${req.user._id}`)
-        const {upcomingBets = "[]", inGameBets = "[]", state} = await rdsGet(redis, GAME_ID);
+        const {upcomingBets = "[]", currentBets = "[]", state} = await rdsGet(redis, GAME_ID);
 
-
-        if(state === "STARTED" || state === "ENDED"){
+        if(state === "STARTED"){
             const bets = JSON.parse(upcomingBets).filter(b => `${b.userId}` !== `${req.user._id}`)
             redis.hmset([GAME_ID, 'upcomingBets', JSON.stringify(bets)]);
         } else {
-            const bets = JSON.parse(inGameBets).filter(b => `${b.userId}` !== `${req.user._id}`)
-            redis.hmset([GAME_ID, 'inGameBets', JSON.stringify(bets)]);
+            const bets = JSON.parse(currentBets).filter(b => `${b.userId}` !== `${req.user._id}`)
+            redis.hmset([GAME_ID, 'currentBets', JSON.stringify(bets)]);
         }
 
         const pubData = {
