@@ -357,15 +357,14 @@ server.delete('/api/trade', passport.authenticate('jwt', { session: false }),
   async (req, res) => {
     try {
         await wallet.cancelTrade(`${req.user._id}`)
-        const {upcomingBets = "[]", inGameBets = "[]", state} = await rdsGet(redis, GAME_ID);
-
+        const {upcomingBets = "[]", currentBets = "[]", state} = await rdsGet(redis, GAME_ID);
 
         if(state === "STARTED"){
             const bets = JSON.parse(upcomingBets).filter(b => `${b.userId}` !== `${req.user._id}`)
             redis.hmset([GAME_ID, 'upcomingBets', JSON.stringify(bets)]);
         } else {
-            const bets = JSON.parse(inGameBets).filter(b => `${b.userId}` !== `${req.user._id}`)
-            redis.hmset([GAME_ID, 'inGameBets', JSON.stringify(bets)]);
+            const bets = JSON.parse(currentBets).filter(b => `${b.userId}` !== `${req.user._id}`)
+            redis.hmset([GAME_ID, 'currentBets', JSON.stringify(bets)]);
         }
 
         const pubData = {
@@ -492,9 +491,14 @@ server.get('/api/trades/lucky', async (req, res) => {
         const trades = await casinoContract.getLuckyWins(24, 20, GAME_ID);
 
         if(trades && trades.length) {
+            const userIds = [...trades].map(b => mongoose.Types.ObjectId(b.userid));
+            const users = await wallfair.models.User.find({_id: {$in: [...userIds]}}, {username: 1, _id: 1})
+
             trades.map((item) => {
+                const user = users.find(u => u._id.toString() === item.userid);
                 const stakedAmount = item.stakedamount;
                 item.stakedamount = fromScaledBigInt(stakedAmount);
+                item.username = user?.username;
                 return item;
             })
         }
@@ -515,14 +519,56 @@ server.get('/api/trades/high', async (req, res) => {
         const trades = await casinoContract.getHighWins(24, 20, GAME_ID);
 
         if(trades && trades.length) {
+            const userIds = [...trades].map(b => mongoose.Types.ObjectId(b.userid));
+            const users = await wallfair.models.User.find({_id: {$in: [...userIds]}}, {username: 1, _id: 1})
+
             trades.map((item) => {
+                const user = users.find(u => u._id.toString() === item.userid);
                 const stakedAmount = item.stakedamount;
                 item.stakedamount = fromScaledBigInt(stakedAmount);
+                item.username = user?.username;
                 return item;
             })
         }
         return res.status(200)
           .send(trades);
+    } catch (err) {
+        console.log(err);
+        res.status(500).send(err);
+    }
+})
+
+/**
+ * Get some global stats by range
+ */
+
+server.get('/api/globalstats/:range', async (req, res) => {
+    try {
+        const {type, range} = req.params;
+        let output = {};
+
+        const getHours = (range) => {
+            const rangeInt = parseInt(range);
+            if (range.indexOf('w') > -1) {
+                return rangeInt * (24 * 7)
+            }
+
+            if (range.indexOf('all') > -1) {
+                return 0;
+            }
+
+            return rangeInt;
+        }
+
+        const convertedRange = getHours(range);
+        const countBets = await casinoContract.countTradesByLastXHours(convertedRange);
+
+        output['trades'] = parseInt(countBets?.[0].totaltrades);
+        output['volume'] = parseInt(fromScaledBigInt(countBets?.[0].totalvolume));
+        output['range'] = convertedRange === 0 ? 'all time' : `last ${range}`;
+
+        return res.status(200)
+            .send(output);
     } catch (err) {
         console.log(err);
         res.status(500).send(err);
