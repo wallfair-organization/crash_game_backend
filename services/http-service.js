@@ -540,6 +540,43 @@ server.get('/api/trades/high', async (req, res) => {
     }
 })
 
+/**
+ * Get some global stats by range
+ */
+
+server.get('/api/globalstats/:range', async (req, res) => {
+    try {
+        const {type, range} = req.params;
+        let output = {};
+
+        const getHours = (range) => {
+            const rangeInt = parseInt(range);
+            if (range.indexOf('w') > -1) {
+                return rangeInt * (24 * 7)
+            }
+
+            if (range.indexOf('all') > -1) {
+                return 0;
+            }
+
+            return rangeInt;
+        }
+
+        const convertedRange = getHours(range);
+        const countBets = await casinoContract.countTradesByLastXHours(convertedRange);
+
+        output['trades'] = parseInt(countBets?.[0].totaltrades);
+        output['volume'] = parseInt(fromScaledBigInt(countBets?.[0].totalvolume));
+        output['range'] = convertedRange === 0 ? 'all time' : `last ${range}`;
+
+        return res.status(200)
+            .send(output);
+    } catch (err) {
+        console.log(err);
+        res.status(500).send(err);
+    }
+})
+
 
 // Export methods to start/stop app server
 var appServer;
