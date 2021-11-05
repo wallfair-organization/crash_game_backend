@@ -20,7 +20,7 @@
   "author": "Wallfair.io",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
-    "@wallfair.io/smart_contract_mock": "0.9.5",
+    "@wallfair.io/smart_contract_mock": "^0.9.6",
     "@wallfair.io/wallfair-commons": "1.7.19",
     "agenda": "^4.2.1",
     "amqplib": "^0.8.0",
