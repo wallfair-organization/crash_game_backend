@@ -483,12 +483,12 @@ server.get('/api/matches/:hash/prev', async (req, res) => {
 })
 
 /**
- * Get luckies wins in 24 hours
+ * Get luckies wins in last week
  */
 
 server.get('/api/trades/lucky', async (req, res) => {
     try {
-        const trades = await casinoContract.getLuckyWins(24, 20);
+        const trades = await casinoContract.getLuckyWins(24*7, 20);
 
         if(trades && trades.length) {
             const userIds = [...trades].map(b => mongoose.Types.ObjectId(b.userid));
@@ -512,12 +512,12 @@ server.get('/api/trades/lucky', async (req, res) => {
 })
 
 /**
- * Get high wins in 24 hours
+ * Get high wins in last week
  */
 
 server.get('/api/trades/high', async (req, res) => {
     try {
-        const trades = await casinoContract.getHighWins(24, 20);
+        const trades = await casinoContract.getHighWins(24*7, 20);
 
         if(trades && trades.length) {
             const userIds = [...trades].map(b => mongoose.Types.ObjectId(b.userid));
