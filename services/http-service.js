@@ -144,7 +144,7 @@ server.get('/api/current', async (req, res) => {
         upcomingBets: upcomingBets ? upcomingBets.map(normalizeBet) : [],
         cashedOutBets: cashedOutBets ? cashedOutBets.map(normalizeBet) : [],
         lastCrashes,
-        gameId: gameHash,
+        gameId: GAME_ID,
         gameHash,
         animationIndex: JSON.parse(animationIndex),
         musicIndex: JSON.parse(musicIndex),
@@ -175,7 +175,7 @@ server.post('/api/cashout', passport.authenticate('jwt', { session: false }), as
 
         const pubData = {
             crashFactor,
-            gameId: gameHash,
+            gameId: GAME_ID,
             gameHash,
             gameTypeId: GAME_ID,
             gameName: GAME_NAME,
@@ -213,7 +213,7 @@ server.post('/api/cashout', passport.authenticate('jwt', { session: false }), as
         const bets = [
             ...existingBets,
             {
-                gameId: gameHash,
+                gameId: GAME_ID,
                 gameHash,
                 amount: parseInt(totalReward.toString()) / 10000,
                 stakedAmount: parseInt(stakedAmount.toString()) / 10000,
@@ -228,7 +228,7 @@ server.post('/api/cashout', passport.authenticate('jwt', { session: false }), as
 
         res.status(200).json({
             crashFactor,
-            gameId: gameHash,
+            gameId: GAME_ID,
             gameHash,
             gameName: GAME_NAME,
             stakedAmount: parseInt(stakedAmount.toString()) / 10000,
