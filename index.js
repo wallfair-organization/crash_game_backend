@@ -2,6 +2,8 @@
 const dotenv = require('dotenv');
 dotenv.config();
 
+
+
 // create scheduling service
 const scheduler = require("./services/schedule-service");
 
@@ -23,6 +25,18 @@ const pubClient = createClient({
 });
 
 const { init } = require('./services/notification-service');
+
+if(!process.env.GAME_ID) {
+    console.error('No GAME_ID found. Please specify GAME_ID as environment variable (an objectId string)');
+    process.exit(1)
+}
+try {
+    mongoose.Types.ObjectId(process.env.GAME_ID)
+} catch (e) {
+    console.error('GAME_ID should be a valid ObjectId string');
+    process.exit(1)
+}
+
 init(pubClient);
 
 /**

@@ -445,7 +445,7 @@ server.get('/api/matches/:hash', async (req, res) => {
 server.get('/api/matches/:hash/next', async (req, res) => {
     try {
         const { hash } = req.params;
-        const nextMatch = await casinoContract.getNextMatchByGameHash(hash);
+        const nextMatch = await casinoContract.getNextMatchByGameHash(hash, GAME_ID);
         const match = nextMatch ? nextMatch[0] : {};
 
         const bets = await casinoContract.getAllTradesByGameHash(match?.gamehash);
@@ -467,7 +467,7 @@ server.get('/api/matches/:hash/next', async (req, res) => {
 server.get('/api/matches/:hash/prev', async (req, res) => {
     try {
         const { hash } = req.params;
-        const nextMatch = await casinoContract.getPrevMatchByGameHash(hash);
+        const nextMatch = await casinoContract.getPrevMatchByGameHash(hash, GAME_ID);
         const match = nextMatch ? nextMatch[0] : {};
 
         const bets = await casinoContract.getAllTradesByGameHash(match?.gamehash);
@@ -488,7 +488,7 @@ server.get('/api/matches/:hash/prev', async (req, res) => {
 
 server.get('/api/trades/lucky', async (req, res) => {
     try {
-        const trades = await casinoContract.getLuckyWins(24*7, 20);
+        const trades = await casinoContract.getLuckyWins(24*7, 20, GAME_ID);
 
         if(trades && trades.length) {
             const userIds = [...trades].map(b => mongoose.Types.ObjectId(b.userid));
@@ -502,7 +502,6 @@ server.get('/api/trades/lucky', async (req, res) => {
                 return item;
             })
         }
-
         return res.status(200)
           .send(trades);
     } catch (err) {
@@ -517,7 +516,7 @@ server.get('/api/trades/lucky', async (req, res) => {
 
 server.get('/api/trades/high', async (req, res) => {
     try {
-        const trades = await casinoContract.getHighWins(24*7, 20);
+        const trades = await casinoContract.getHighWins(24*7, 20, GAME_ID);
 
         if(trades && trades.length) {
             const userIds = [...trades].map(b => mongoose.Types.ObjectId(b.userid));
@@ -531,7 +530,6 @@ server.get('/api/trades/high', async (req, res) => {
                 return item;
             })
         }
-
         return res.status(200)
           .send(trades);
     } catch (err) {

@@ -1,9 +1,10 @@
 // create scheduling tool
 const Agenda = require("agenda");
-const agenda = new Agenda({ db: { address: process.env.DB_CONNECTION } });
+const agenda = new Agenda({ db: { address: process.env.DB_CONNECTION, collection: `${process.env.GAME_NAME}_jobs` } });
 
 const { rdsGet } = require('../utils/redis');
 
+if(!process.env.GAME_ID) throw 'No GAME_ID found. Please specify GAME_ID as environment variable'
 // define constants that can be overriden in .env
 const GAME_INTERVAL_IN_SECONDS = process.env.GAME_INTERVAL_IN_SECONDS || 5;
 const GAME_NAME = process.env.GAME_NAME || "ROSI";
@@ -24,7 +25,7 @@ var redis;
 const wallet = require("./wallet-service");
 
 const ONE = 10000n;
-const GAME_ID = process.env.GAME_ID || '614381d74f78686665a5bb76';
+const GAME_ID = process.env.GAME_ID;
 
 //Import sc mock
 const { CasinoTradeContract, Erc20 } = require('@wallfair.io/smart_contract_mock');
