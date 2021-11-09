@@ -2,7 +2,7 @@
 const dotenv = require('dotenv');
 dotenv.config();
 
-const GAME_ID = '614381d74f78686665a5bb76';
+const GAME_ID = process.env.GAME_ID;
 
 // Create Redis pub and sub clients
 const { createClient } = require("redis");

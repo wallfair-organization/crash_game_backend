@@ -22,6 +22,22 @@ const pubClient = createClient({
     no_ready_check: false
 });
 
+if(!process.env.GAME_NAME) {
+    console.error('No GAME_NAME found. Please specify a unique GAME_NAME as environment variable');
+    process.exit(1)
+}
+
+if(!process.env.GAME_ID) {
+    console.error('No GAME_ID found. Please specify GAME_ID as environment variable (an objectId string)');
+    process.exit(1)
+}
+try {
+    mongoose.Types.ObjectId(process.env.GAME_ID)
+} catch (e) {
+    console.error('GAME_ID should be a valid ObjectId string');
+    process.exit(1)
+}
+
 const amqp = require('./services/amqp-service');
 amqp.init();
 

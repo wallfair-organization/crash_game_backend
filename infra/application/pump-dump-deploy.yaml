@@ -1,18 +1,18 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: crash-game
+  name: pump-dump-game
   labels:
-    app: crash-game
+    app: pump-dump-game
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: crash-game
+      app: pump-dump-game
   template:
     metadata:
       labels:
-        app: crash-game
+        app: pump-dump-game
     spec:
       containers:
         - image: registry.digitalocean.com/wallfair/crash-game-k8s
@@ -27,11 +27,12 @@ spec:
               name: crash-game-config
           env:
             - name: GAME_NAME
-              value: CASINO_ROSI
+              value: PUMP_DUMP
             - name: GAME_ID
-              value: 614381d74f78686665a5bb76
+              value: 61817de6a9695acd029ffef3
           ports:
             - containerPort: 80
+
 
 ---
 
@@ -39,14 +40,14 @@ apiVersion: autoscaling/v1
 kind: HorizontalPodAutoscaler
 metadata:
   namespace: staging
-  name: crash-game
+  name: pump-dump-game
 spec:
   maxReplicas: 10
   minReplicas: 1
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: crash-game
+    name: pump-dump-game
   targetCPUUtilizationPercentage: 50
 
 ---
@@ -54,11 +55,11 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: crash-game-backend
+  name: pump-dump-game-backend
   namespace: staging
 spec:
   selector:
-    app: crash-game
+    app: pump-dump-game
   ports:
     - protocol: TCP
       port: 80
