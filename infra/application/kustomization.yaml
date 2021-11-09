@@ -1,5 +1,6 @@
 resources:
   - crash-game-prod-deploy.yaml
+  - pump-dump-deploy.yaml
   - ingress-backend-prod.yaml
 
 configMapGenerator:
