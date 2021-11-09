@@ -2,8 +2,6 @@
 const dotenv = require('dotenv');
 dotenv.config();
 
-
-
 // create scheduling service
 const scheduler = require("./services/schedule-service");
 
@@ -24,8 +22,6 @@ const pubClient = createClient({
     no_ready_check: false
 });
 
-const { init } = require('./services/notification-service');
-
 if(!process.env.GAME_NAME) {
     console.error('No GAME_NAME found. Please specify a unique GAME_NAME as environment variable');
     process.exit(1)
@@ -42,7 +38,8 @@ try {
     process.exit(1)
 }
 
-init(pubClient);
+const amqp = require('./services/amqp-service');
+amqp.init();
 
 /**
  * Main function of this application.
