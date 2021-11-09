@@ -26,9 +26,9 @@ spec:
           - configMapRef:
               name: crash-game-config
           env:
-            - key: GAME_NAME
+            - name: GAME_NAME
               value: CASINO_ROSI
-            - key: GAME_ID
+            - name: GAME_ID
               value: 614381d74f78686665a5bb76
           ports:
             - containerPort: 80

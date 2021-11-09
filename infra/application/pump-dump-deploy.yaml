@@ -26,9 +26,9 @@ spec:
           - configMapRef:
               name: crash-game-config
           env:
-            - key: GAME_NAME
+            - name: GAME_NAME
               value: PUMP_DUMP
-            - key: GAME_ID
+            - name: GAME_ID
               value: 61817de6a9695acd029ffef3
           ports:
             - containerPort: 80
