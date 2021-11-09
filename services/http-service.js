@@ -120,7 +120,7 @@ server.get('/api/current', async (req, res) => {
         bgIndex
     } = await rdsGet(redis, GAME_ID);
 
-    const {currentBets, upcomingBets, cashedOutBets} = await casinoContract.getBets(gameHash)
+    const {currentBets, upcomingBets, cashedOutBets} = await casinoContract.getBets(gameHash, GAME_ID)
     const userIds = [...currentBets, ...upcomingBets, ...cashedOutBets]
       .map(b => mongoose.Types.ObjectId(b.userid))
 
