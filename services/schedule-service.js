@@ -242,9 +242,11 @@ agenda.define("game_close", async (job) => {
                 crashFactor,
                 gameHash: gameHash,
                 gameName: GAME_NAME,
+                gameTypeId: GAME_ID,
                 stakedAmount,
                 userId: trade.userid,
-                username: user?.username
+                username: user?.username,
+                updatedAt: Date.now()
             };
 
             amqp.send('crash_game', 'casino.lost', JSON.stringify({
