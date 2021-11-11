@@ -8,6 +8,8 @@ const { rdsGet } = require('../utils/redis');
 const corsOptions = {
     origin: ["wallfair.io",
         /\.wallfair\.io$/,
+        "alpacasino.io",
+        /\.alpacasino\.io$/,
         /\.ngrok\.io$/,
         /\.netlify\.app$/,
         /localhost:?.*$/m,
