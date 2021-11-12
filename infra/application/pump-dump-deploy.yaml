@@ -17,14 +17,14 @@ spec:
       containers:
         - image: registry.digitalocean.com/wallfair/crash-game-k8s
           imagePullPolicy: Always
-          name: crash-game
+          name: pump-dump-game
           envFrom:
           - configMapRef:
               name: app-config
           - configMapRef:
               name: app-secrets
           - configMapRef:
-              name: crash-game-config
+              name: pump-dump-game-config
           env:
             - name: GAME_NAME
               value: PUMP_DUMP
@@ -32,7 +32,6 @@ spec:
               value: 61817de6a9695acd029ffef3
           ports:
             - containerPort: 80
-
 
 ---
 

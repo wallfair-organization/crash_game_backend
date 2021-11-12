@@ -15,7 +15,6 @@ spec:
 
 ---
 
-
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -30,5 +29,3 @@ spec:
               name: app-secrets
           - configMapRef:
               name: backend-production-values
-
-
