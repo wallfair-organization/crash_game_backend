@@ -1,7 +1,7 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: crash-game-ingress
+  name: crash-game-ingress-geoblock
   annotations:
     kubernetes.io/ingress.class: "kong"
     konghq.com/protocols: "https"
@@ -9,12 +9,12 @@ metadata:
     konghq.com/https-redirect-status-code: "301"
     # reference production issuer
     cert-manager.io/cluster-issuer: "letsencrypt-issuer-kong"
+    konghq.com/override: geoblock-routing-crashgame
 
 spec:
   tls:
   - hosts:
     - elon-api.alpacasino.io
-    - pump-dump-api.alpacasino.io
     secretName: crash-game-cert-secret
   rules:
   - host: elon-api.alpacasino.io
@@ -24,7 +24,7 @@ spec:
           pathType: Prefix
           backend:
             service:
-              name: crash-game-backend
+              name: geoblock-static
               port:
                 number: 80
   - host: pump-dump-api.alpacasino.io
@@ -34,6 +34,66 @@ spec:
           pathType: Prefix
           backend:
             service:
-              name: pump-dump-game-backend
+              name: geoblock-static
               port:
                 number: 80
+
+---
+
+apiVersion: configuration.konghq.com/v1
+kind: KongIngress
+metadata:
+    name: geoblock-routing-crashgame
+route:
+  headers:
+    Cf-Ipcountry: 
+    - US
+    - AS
+    - GU
+    - MP
+    - PR
+    - VI
+    - FR
+    - GF
+    - GP
+    - MQ
+    - MF
+    - BL
+    - PF
+    - NC
+    - WF
+    - TF
+    - YT
+    - RE
+    - PM
+    - NL
+    - AW
+    - CW
+    - SX
+    - BQ
+    - AU
+    - NT
+    - AQ
+    - CX
+    - QO
+    - CC
+    - HM
+    - NF
+    - GB
+    - ES
+    - CY
+    - TR
+    - CN
+    - AE
+    - KH
+    - QA
+    - LB
+    - PL
+    - SG
+    - JP
+    - SA
+    - JO
+    - YE
+    - KW
+    - OM
+    - BH

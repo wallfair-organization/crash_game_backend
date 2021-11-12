@@ -14,3 +14,24 @@ spec:
             requests:
               cpu: 1000m
               memory: 1024Mi
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pump-dump-game
+spec:
+  template:
+    spec:
+      containers:
+        - name: pump-dump-game
+          resources:
+            limits:
+              cpu: 2000m
+              memory: 2048Mi
+            requests:
+              cpu: 1000m
+              memory: 1024Mi
+
+

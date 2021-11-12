@@ -12,6 +12,7 @@ spec:
   tls:
   - hosts:
     - staging-elon-api.wallfair.io
+    - staging-pump-dump-api.wallfair.io
     secretName: crash-game-staging-cert-secret
   rules:
   - host: staging-elon-api.wallfair.io
