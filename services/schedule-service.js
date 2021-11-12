@@ -23,6 +23,8 @@ var redis;
 
 // wallet service for wallet/blockchain operations
 const wallet = require("./wallet-service");
+// rabbitmq service
+const amqp = require('./amqp-service');
 
 const ONE = 10000n;
 const GAME_ID = process.env.GAME_ID;
@@ -30,7 +32,7 @@ const GAME_ID = process.env.GAME_ID;
 //Import sc mock
 const { CasinoTradeContract, Erc20 } = require('@wallfair.io/smart_contract_mock');
 
-const {publishEvent, notificationEvents} = require("../services/notification-service");
+const { notificationEvents } = require("@wallfair.io/wallfair-commons/constants/eventTypes");
 const mongoose = require("mongoose");
 const wallfair = require("@wallfair.io/wallfair-commons");
 
@@ -91,8 +93,6 @@ const casinoContract = new CasinoTradeContract(CASINO_WALLET_ADDR);
 
     console.log("Crash factor decided", crashFactor);
 
-
-
     let gameLengthMS = crashUtils.totalDelayTime(crashFactor);
 
     // log the start of the game for debugging purposes
@@ -119,19 +119,17 @@ const casinoContract = new CasinoTradeContract(CASINO_WALLET_ADDR);
    const bgIndex = Math.floor(Math.random() * 5);
 
     // notify others that game started
-    redis.publish('message', JSON.stringify({
+    amqp.send('crash_game', 'casino.start', JSON.stringify({
         to: GAME_ID,
         event: "CASINO_START",
-        data: {
-            gameId: gameHash, // TODO: make frontend use gameHash
-            gameHash,
-            gameName: GAME_NAME,
-            animationIndex: animationIndex,
-            musicIndex: musicIndex,
-            bgIndex: bgIndex,
-            "timeStarted": timeStarted.toISOString()
-        }
-    }));
+        gameId: gameHash,
+        gameHash,
+        gameName: GAME_NAME,
+        animationIndex,
+        musicIndex,
+        bgIndex,
+        "timeStarted": timeStarted.toISOString()
+    }))
 
     // change redis state of the game
     redis.hmset([GAME_ID,
@@ -143,10 +141,6 @@ const casinoContract = new CasinoTradeContract(CASINO_WALLET_ADDR);
         "currentCrashFactor", crashFactor + "",
         "timeStarted", timeStarted.toISOString()]);
 });
-
-
-
-
 
 /**
  * Method for ending the game.
@@ -198,37 +192,14 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
     let nextGameAt = startJob.attrs.nextRunAt;
 
     // notify others that game ended
-    redis.publish('message', JSON.stringify({
+    amqp.send('crash_game', 'casino.end', JSON.stringify({
         to: GAME_ID,
         event: "CASINO_END",
-        data: {
-            nextGameAt,
-            crashFactor,
-            gameId: gameHash,
-            gameName: GAME_NAME
-        }
-    }));
-
-
-    // notifies about wins
-    // DISABLED FOR NOW
-    /*winners.forEach((winner) => {
-        let reward = Number(winner.reward) / Number(ONE);
-        let stakedAmount = parseInt(winner.stakedamount) / Number(ONE);
-
-        redis.publish('message', JSON.stringify({
-            to: winner.userid,
-            event: "CASINO_REWARD",
-            data: {
-                crashFactor,
-                gameId: gameHash,
-                gameName: GAME_NAME,
-                stakedAmount,
-                reward,
-                userId: winner.userid,
-            }
-        }));
-    });*/
+        nextGameAt,
+        crashFactor,
+        gameId: gameHash,
+        gameName: GAME_NAME
+    }))
 
     // extract next game bets
     const { upcomingBets = "[]"} = await rdsGet(redis, GAME_ID);
@@ -271,23 +242,28 @@ agenda.define("game_close", async (job) => {
                 crashFactor,
                 gameHash: gameHash,
                 gameName: GAME_NAME,
+                gameTypeId: GAME_ID,
                 stakedAmount,
                 userId: trade.userid,
-                username: user?.username
+                username: user?.username,
+                updatedAt: Date.now()
             };
 
-            redis.publish('message', JSON.stringify({
-                to: trade.userid,
+            amqp.send('crash_game', 'casino.lost', JSON.stringify({
+                to: GAME_ID,
                 event: "CASINO_LOST",
-                data: payload
-            }));
+                ...payload
+            }))
 
-            publishEvent(notificationEvents.EVENT_CASINO_LOST, {
+            // publish message for uniEvent
+            amqp.send('universal_events', 'casino.lost', JSON.stringify({
+                event: notificationEvents.EVENT_CASINO_LOST,
                 producer: 'user',
-                producerId: trade.userid,
+                producerId: payload.userId,
                 data: payload,
+                date: Date.now(),
                 broadcast: true
-            });
+            }))
         })
     }
 

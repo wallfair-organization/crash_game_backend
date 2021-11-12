@@ -15,6 +15,16 @@ spec:
           pathType: Prefix
           backend:
             service:
-              name: backend
+              name: crash-game-backend
+              port:
+                number: 80
+  - host: dev-pump-dump-api.wallfair.io
+    http:
+      paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: pump-dump-game-backend
               port:
                 number: 80

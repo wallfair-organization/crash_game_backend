@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: crash-game
+  labels:
+    app: crash-game
+spec:
+  template:
+    spec:
+      containers:
+        - name: crash-game
+          envFrom:
+          - configMapRef:
+              name: app-config
+          - configMapRef:
+              name: app-secrets
+          - configMapRef:
+              name: crash-game-config
+          - configMapRef:
+              name: postgres-conn
+          - configMapRef:
+              name: mongo-conn
+          - configMapRef:
+              name: postgres-conn
+          - configMapRef:
+              name: redis-conn
