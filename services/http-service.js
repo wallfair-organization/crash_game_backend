@@ -497,10 +497,10 @@ server.get('/api/matches/:hash/prev', async (req, res) => {
 })
 
 /**
- * Get luckies wins in last week
+ * Get luckies wins in last week by optional :gameId filter
  */
 
-server.get('/api/trades/lucky/:gameId', async (req, res) => {
+server.get('/api/trades/lucky/:gameId?', async (req, res) => {
     try {
         const {gameId} = req.params;
         const trades = await casinoContract.getLuckyWins(24*7, 20, gameId);
@@ -526,10 +526,10 @@ server.get('/api/trades/lucky/:gameId', async (req, res) => {
 })
 
 /**
- * Get high wins in last week by :gameId
+ * Get high wins in last week by optional :gameId filter
  */
 
-server.get('/api/trades/high/:gameId', async (req, res) => {
+server.get('/api/trades/high/:gameId?', async (req, res) => {
     try {
         const {gameId} = req.params;
         const trades = await casinoContract.getHighWins(24*7, 20, gameId);
@@ -548,6 +548,37 @@ server.get('/api/trades/high/:gameId', async (req, res) => {
         }
         return res.status(200)
           .send(trades);
+    } catch (err) {
+        console.log(err);
+        res.status(500).send(err);
+    }
+})
+
+
+/**
+ * Get last completed trades filtered by user / game. Game is optional.
+ */
+
+server.get('/api/trades/user/:userId/:gameTypeId?', async (req, res) => {
+    const {gameTypeId, userId} = req.params;
+    try {
+        const trades = await casinoContract.getLastCasinoTradesByGameType(gameTypeId, userId, 10);
+
+        if(trades && trades.length) {
+            const userIds = [...trades].map(b => mongoose.Types.ObjectId(b.userid));
+            const users = await wallfair.models.User.find({_id: {$in: [...userIds]}}, {username: 1, _id: 1})
+
+            trades.map((item) => {
+                const user = users.find(u => u._id.toString() === item.userid);
+                const stakedAmount = item.stakedamount;
+                item.stakedamount = fromScaledBigInt(stakedAmount);
+                item.username = user?.username;
+                item.profit = (item.stakedamount * parseFloat(item.crashfactor)) - item.stakedamount;
+                return item;
+            })
+        }
+
+        res.status(200).send(trades || []);
     } catch (err) {
         console.log(err);
         res.status(500).send(err);
