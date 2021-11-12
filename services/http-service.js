@@ -497,10 +497,10 @@ server.get('/api/matches/:hash/prev', async (req, res) => {
 })
 
 /**
- * Get luckies wins in last week
+ * Get luckies wins in last week by optional :gameId filter
  */
 
-server.get('/api/trades/lucky/:gameId', async (req, res) => {
+server.get('/api/trades/lucky/:gameId?', async (req, res) => {
     try {
         const {gameId} = req.params;
         const trades = await casinoContract.getLuckyWins(24*7, 20, gameId);
@@ -526,10 +526,10 @@ server.get('/api/trades/lucky/:gameId', async (req, res) => {
 })
 
 /**
- * Get high wins in last week by :gameId
+ * Get high wins in last week by optional :gameId filter
  */
 
-server.get('/api/trades/high/:gameId', async (req, res) => {
+server.get('/api/trades/high/:gameId?', async (req, res) => {
     try {
         const {gameId} = req.params;
         const trades = await casinoContract.getHighWins(24*7, 20, gameId);
