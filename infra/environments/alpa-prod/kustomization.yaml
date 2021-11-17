@@ -1,0 +1,15 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+- ../../application
+- geoblockOverride.yaml
+
+namespace: alpa-prod
+commonLabels:
+  environment: alpa-prod
+
+patches:
+  - prodConfigPatch.yaml
+  - replicasPatch.yaml
+  - resourcesPatch.yaml
+  - ingressPatch.yaml
