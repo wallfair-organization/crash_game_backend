@@ -13,6 +13,10 @@ if(!SEED) {
     throw new Error('HASH_SEED is empty. Please define it as env variable.')
 }
 
+if(!fs.existsSync(HASH_FILE_PATH)) {
+    throw new Error(`hashes.txt file is not existing ${HASH_FILE_PATH}`)
+}
+
 const divisible = (hash, mod) => {
     // We will read in 4 hex at a time, but the first chunk might be a bit smaller
     // So ABCDEFGHIJ should be chunked like  AB CDEF GHIJ
