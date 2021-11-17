@@ -1,3 +1,5 @@
+const {performance} = require('perf_hooks');
+
 // create scheduling tool
 const Agenda = require("agenda");
 const agenda = new Agenda({ db: { address: process.env.DB_CONNECTION, collection: `${process.env.GAME_NAME}_jobs` } });
@@ -39,6 +41,7 @@ const wallfair = require("@wallfair.io/wallfair-commons");
 const CASINO_WALLET_ADDR = process.env.WALLET_ADDR || "CASINO";
 const casinoContract = new CasinoTradeContract(CASINO_WALLET_ADDR);
 
+const {readHashByLine, crashFactorFromHash} = require('../utils/hash_utils');
 /**
  * Method for starting the game.
  * This method decides the crash factor, and schedules the end of the game.
@@ -56,8 +59,7 @@ const casinoContract = new CasinoTradeContract(CASINO_WALLET_ADDR);
      // ensure only one game is starting from the previous game
      let {prevGame} = job.attrs.data;
 
-    // use the id of this job as gameHash
-    let gameHash = job.attrs._id;
+
     const jobs = await agenda.jobs({"name": "crashgame_start", "data.prevGame": prevGame}, {"data.createdAt": 1}, 1, 0);
     console.log(new Date(), "crashgame_start", jobs.length);
 
@@ -70,29 +72,36 @@ const casinoContract = new CasinoTradeContract(CASINO_WALLET_ADDR);
     if(job.attrs.data.endJob) {
         console.log(new Date(), "crashgame_start", `Job ${job.attrs._id.toString()} will skip execution intentionally`);
         return;
-    };
+    }
+
+    const lastHashLine = await wallet.getLastHashLineGameType(GAME_ID).catch((err) => {
+        console.error(`getLastMatchByGameType failed`, err);
+    });
+
+    const currentHashLine = lastHashLine ? lastHashLine+1 : 1;
+
+     //average time to find very last record = 1.2352231789994985
+     const hashByLine = await readHashByLine(currentHashLine).catch((err) => {
+         console.error(`readFileLine failed`, err);
+     });
+     const currentCrashFactor = crashFactorFromHash(hashByLine);
 
      // decides on a crash factor
-    let crashFactor = -1;
+     let crashFactor = currentCrashFactor || -1;
+     console.log(new Date(), '[PROVABLY_FAIR] fileHashLine', currentHashLine);
+     console.log(new Date(), '[PROVABLY_FAIR] hash', hashByLine);
+     console.log(new Date(), '[PROVABLY_FAIR] crashFactor', crashFactor);
 
-    var bit = Math.random();
+     if (crashFactor < 1) {
+         crashFactor = 1;
+     }
 
-    console.log(new Date(), "Bit", bit)
+     if (crashFactor > 100) {
+         crashFactor = 100;
+     }
 
-    if (bit < 0.75) {
-        crashFactor = gaussian() * 10;
-    } else if (bit < 0.9) {
-        crashFactor = gaussian() * 30;
-    } else {
-        crashFactor = gaussian() * 100;
-    }
-
-    if (crashFactor < 1) {
-        crashFactor = 1;
-    }
-
-    console.log("Crash factor decided", crashFactor);
-
+    //gameHash should be hash from file, instead just id from agenda
+    const gameHash = hashByLine;
     let gameLengthMS = crashUtils.totalDelayTime(crashFactor);
 
     // log the start of the game for debugging purposes
@@ -102,7 +111,7 @@ const casinoContract = new CasinoTradeContract(CASINO_WALLET_ADDR);
     console.log(new Date(), `The game ${gameHash} will crash with a factor of ${crashFactor} in ${gameLengthMS / 1000} seconds`);
 
     // lock open trades to this particular game
-    await wallet.lockOpenTrades(GAME_ID, gameHash.toString(), crashFactor, gameLengthMS);
+    await wallet.lockOpenTrades(GAME_ID, gameHash.toString(), crashFactor, gameLengthMS, currentHashLine);
     let nextGameStartTime = new Date(Date.now() + gameLengthMS);
 
      // schedules the end of the game

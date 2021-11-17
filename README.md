@@ -15,6 +15,16 @@ The main functions are as follows:
  - Handle failures and job retries
  - Handle concurrency with locks 
 
+## Provably fair algorithm 
+
+### Current 10 000 000 (secured/hashes.txt) based on block:
+Current max rows in file is: `2,147,483,647` (INT type which we are using for PG)
+```
+https://etherscan.io/block/13626940 
+Mined by #HASH
+PUBLIC SEED
+```
+
 ## API
 
 ### Obtain current info

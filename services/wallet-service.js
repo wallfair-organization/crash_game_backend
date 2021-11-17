@@ -32,8 +32,8 @@ module.exports = {
         console.log(new Date(), `User ${userId} canceled his trade`);
     },
 
-    lockOpenTrades: async (gameId, gameHash, crashFactor, gameLengthMS) => {
-        await casinoContract.lockOpenTrades(gameId, gameHash, crashFactor, gameLengthMS);
+    lockOpenTrades: async (gameId, gameHash, crashFactor, gameLengthMS, currentHashLine) => {
+        await casinoContract.lockOpenTrades(gameId, gameHash, crashFactor, gameLengthMS, currentHashLine);
         // link current waiting trades to game which just started
         console.log(new Date(), `All open trades locked in game ${gameHash}`);
     },
@@ -60,5 +60,9 @@ module.exports = {
     },
     mintInitialBalance: async () => {
         await WFAIR.mint(CASINO_WALLET_ADDR, WALLET_INITIAL_LIQUIDITY_TO_MINT * WFAIR.ONE);
+    },
+    getLastHashLineGameType: async (gameId) => {
+        let lastMatch = await casinoContract.getLastMatchByGameType(gameId);
+        return lastMatch?.[0].currenthashline;
     }
 }
