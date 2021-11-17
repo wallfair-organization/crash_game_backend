@@ -1,3 +1,5 @@
+const {performance} = require('perf_hooks');
+
 // create scheduling tool
 const Agenda = require("agenda");
 const agenda = new Agenda({ db: { address: process.env.DB_CONNECTION, collection: `${process.env.GAME_NAME}_jobs` } });
@@ -39,6 +41,7 @@ const wallfair = require("@wallfair.io/wallfair-commons");
 const CASINO_WALLET_ADDR = process.env.WALLET_ADDR || "CASINO";
 const casinoContract = new CasinoTradeContract(CASINO_WALLET_ADDR);
 
+const {readHashByLine, crashFactorFromHash} = require('../utils/hash_utils');
 /**
  * Method for starting the game.
  * This method decides the crash factor, and schedules the end of the game.
@@ -70,28 +73,28 @@ const casinoContract = new CasinoTradeContract(CASINO_WALLET_ADDR);
     if(job.attrs.data.endJob) {
         console.log(new Date(), "crashgame_start", `Job ${job.attrs._id.toString()} will skip execution intentionally`);
         return;
-    };
+    }
+
+     //
+     // const match = await casinoContract.getMatchByHash(gameHash.toString()).catch((err) => {
+     //     console.error(`getMatchByHash failed ${gameHash}`, err);
+     //     crashFactor = 1;
+     // });
+
+     //average time to find very last record = 1.2352231789994985
+     const hashByLine = await readHashByLine(10_000_000).catch((err) => {
+         console.error(`readFileLine failed`, err);
+     });
+     const currentCrashFactor = crashFactorFromHash(hashByLine);
 
      // decides on a crash factor
-    let crashFactor = -1;
-
-    var bit = Math.random();
-
-    console.log(new Date(), "Bit", bit)
-
-    if (bit < 0.75) {
-        crashFactor = gaussian() * 10;
-    } else if (bit < 0.9) {
-        crashFactor = gaussian() * 30;
-    } else {
-        crashFactor = gaussian() * 100;
-    }
+     let crashFactor = currentCrashFactor || -1;
+     console.log('[PROVABLY_FAIR] hash', hashByLine);
+     console.log('[PROVABLY_FAIR] crashFactor', crashFactor);
 
     if (crashFactor < 1) {
         crashFactor = 1;
     }
-
-    console.log("Crash factor decided", crashFactor);
 
     let gameLengthMS = crashUtils.totalDelayTime(crashFactor);
 
