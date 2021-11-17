@@ -75,20 +75,21 @@ const {readHashByLine, crashFactorFromHash} = require('../utils/hash_utils');
         return;
     }
 
-     //
-     // const match = await casinoContract.getMatchByHash(gameHash.toString()).catch((err) => {
-     //     console.error(`getMatchByHash failed ${gameHash}`, err);
-     //     crashFactor = 1;
-     // });
+    const lastHashLine = await wallet.getLastHashLineGameType(GAME_ID).catch((err) => {
+        console.error(`getLastMatchByGameType failed`, err);
+    });
+
+    const currentHashLine = lastHashLine ? lastHashLine+1 : 1;
 
      //average time to find very last record = 1.2352231789994985
-     const hashByLine = await readHashByLine(10_000_000).catch((err) => {
+     const hashByLine = await readHashByLine(currentHashLine).catch((err) => {
          console.error(`readFileLine failed`, err);
      });
      const currentCrashFactor = crashFactorFromHash(hashByLine);
 
      // decides on a crash factor
      let crashFactor = currentCrashFactor || -1;
+     console.log('[PROVABLY_FAIR] fileHashLine', currentHashLine);
      console.log('[PROVABLY_FAIR] hash', hashByLine);
      console.log('[PROVABLY_FAIR] crashFactor', crashFactor);
 
@@ -105,7 +106,7 @@ const {readHashByLine, crashFactorFromHash} = require('../utils/hash_utils');
     console.log(new Date(), `The game ${gameHash} will crash with a factor of ${crashFactor} in ${gameLengthMS / 1000} seconds`);
 
     // lock open trades to this particular game
-    await wallet.lockOpenTrades(GAME_ID, gameHash.toString(), crashFactor, gameLengthMS);
+    await wallet.lockOpenTrades(GAME_ID, gameHash.toString(), crashFactor, gameLengthMS, currentHashLine);
     let nextGameStartTime = new Date(Date.now() + gameLengthMS);
 
      // schedules the end of the game
