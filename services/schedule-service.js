@@ -88,13 +88,17 @@ const {readHashByLine, crashFactorFromHash} = require('../utils/hash_utils');
 
      // decides on a crash factor
      let crashFactor = currentCrashFactor || -1;
-     console.log('[PROVABLY_FAIR] fileHashLine', currentHashLine);
-     console.log('[PROVABLY_FAIR] hash', hashByLine);
-     console.log('[PROVABLY_FAIR] crashFactor', crashFactor);
+     console.log(new Date(), '[PROVABLY_FAIR] fileHashLine', currentHashLine);
+     console.log(new Date(), '[PROVABLY_FAIR] hash', hashByLine);
+     console.log(new Date(), '[PROVABLY_FAIR] crashFactor', crashFactor);
 
-    if (crashFactor < 1) {
-        crashFactor = 1;
-    }
+     if (crashFactor < 1) {
+         crashFactor = 1;
+     }
+
+     if (crashFactor > 100) {
+         crashFactor = 100;
+     }
 
     //gameHash should be hash from file, instead just id from agenda
     const gameHash = hashByLine;
