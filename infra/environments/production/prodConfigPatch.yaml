@@ -11,5 +11,5 @@ spec:
           - configMapRef:
               name: app-secrets
           - configMapRef:
-              name: crash-game-prod-values
+              name: backend-production-values
 

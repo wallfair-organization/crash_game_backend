@@ -3,19 +3,20 @@ kind: Ingress
 metadata:
   name: crash-game-ingress
   annotations:
-    kubernetes.io/ingress.class: "nginx"
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
-    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    kubernetes.io/ingress.class: "kong"
+    konghq.com/protocols: "https"
+    kubernetes.io/tls-acme: "true"
+    konghq.com/https-redirect-status-code: "301"
     # reference production issuer
-    cert-manager.io/cluster-issuer: "letsencrypt-issuer"
+    cert-manager.io/cluster-issuer: "letsencrypt-issuer-kong"
 spec:
   tls:
   - hosts:
-    - staging-elon-api.wallfair.io
-    - staging-pump-dump-api.wallfair.io
-    secretName: crash-game-staging-cert-secret
+    - staging-elon-api.alpacasino.io
+    - staging-pump-dump-api.alpacasino.io
+    secretName: crash-game-cert-secret
   rules:
-  - host: staging-elon-api.wallfair.io
+  - host: staging-elon-api.alpacasino.io
     http:
       paths:
         - path: /
@@ -25,7 +26,7 @@ spec:
               name: crash-game-backend
               port:
                 number: 80
-  - host: staging-pump-dump-api.wallfair.io
+  - host: staging-pump-dump-api.alpacasino.io
     http:
       paths:
         - path: /
