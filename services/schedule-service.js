@@ -59,8 +59,7 @@ const {readHashByLine, crashFactorFromHash} = require('../utils/hash_utils');
      // ensure only one game is starting from the previous game
      let {prevGame} = job.attrs.data;
 
-    // use the id of this job as gameHash
-    let gameHash = job.attrs._id;
+
     const jobs = await agenda.jobs({"name": "crashgame_start", "data.prevGame": prevGame}, {"data.createdAt": 1}, 1, 0);
     console.log(new Date(), "crashgame_start", jobs.length);
 
@@ -97,6 +96,8 @@ const {readHashByLine, crashFactorFromHash} = require('../utils/hash_utils');
         crashFactor = 1;
     }
 
+    //gameHash should be hash from file, instead just id from agenda
+    const gameHash = hashByLine;
     let gameLengthMS = crashUtils.totalDelayTime(crashFactor);
 
     // log the start of the game for debugging purposes
