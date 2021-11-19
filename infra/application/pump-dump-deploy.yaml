@@ -14,10 +14,27 @@ spec:
       labels:
         app: pump-dump-game
     spec:
+      volumes:
+        - name: hashes-volume
+          emptyDir: {}
+      initContainers:
+        - name: download-hashes
+          image: busybox
+          command:
+            - wget
+            - "-O"
+            - "/work/hashes.txt"
+            - https://wallfair-hashes.ams3.digitaloceanspaces.com/hashes_pump_dump.txt 
+          volumeMounts:
+            - name: hashes-volume
+              mountPath: "/work"
       containers:
         - image: registry.digitalocean.com/wallfair/crash-game-k8s
           imagePullPolicy: Always
           name: pump-dump-game
+          volumeMounts:
+            - name: hashes-volume
+              mountPath: "/usr/src/app/secured/"
           envFrom:
           - configMapRef:
               name: app-config
