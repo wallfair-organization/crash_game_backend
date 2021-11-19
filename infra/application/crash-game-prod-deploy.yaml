@@ -33,7 +33,7 @@ spec:
           imagePullPolicy: Always
           name: crash-game
           volumeMounts:
-            - name: download-hashes
+            - name: hashes-volume
               mountPath: "/usr/src/app/secured/"
           envFrom:
           - configMapRef:
