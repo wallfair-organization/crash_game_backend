@@ -25,6 +25,14 @@ Mined by #HASH
 PUBLIC SEED
 ```
 
+### How to generate hashes for development use
+1. Pull latest @wallfair/commons package https://github.com/wallfair-organization/wallfair-commons
+2. Create a file to store hashes at `wallfair-commons/scripts/provably-fair/output/hashes.txt`   
+3. Run `wallfair-commons/scripts/provably-fair/generateHashes` with GENESIS_SEED environment variable specified.
+   GENESIS_SEED can be any string.
+4. Copy `hashes.txt` to `crash_game_backend/secured` 
+5. Use the same string for HASH_SEED environment variable as for GENESIS_SEED in step 3
+
 ## API
 
 ### Obtain current info
