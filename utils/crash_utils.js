@@ -4,30 +4,26 @@ module.exports = {
         let delay = 0;
 
         for (i = 1; i <= crashFactor; i = i + 0.01) {
-
-            if (i > 1  && i < 2.50) {
-                delay = 120; //speed: 18000/150 => 120 per 0.01 increment
+            if (i > 1  && i < 3.00) {
+                delay = 190; //speed: 38000/200 => 190 per 0.01 increment
             } 
-            if (i >= 2.50  && i < 5) {
-                delay = 100;     //speed: 25000/250 => 100 per 0.01 increment
+            if (i >= 3.00  && i < 5.00) {
+                delay = 110;     //speed: 22000/200 => 110 per 0.01 increment
             } 
-            if (i >= 5.00  && i < 7.50) {
-                delay = 60;     //speed: 15000/250 => 60 per 0.01 increment
+            if (i >= 5.00  && i < 8.00) {
+                delay = 65;     //speed: 20000/300 => 66.66 per 0.01 increment
             } 
-            if (i >= 7.50  && i < 10) {
-                delay = 40;     //speed: 10000/250 => 40 per 0.01 increment
+            if (i >= 8.00  && i < 10) {
+                delay = 80;     
             }  
-            if (i >= 10 && i < 25) {
-                delay = 30;
+            if (i >= 10 && i < 15) {
+                delay = 80;
             }
-            if (i >= 25 && i < 50) {
-                delay = 20;
+            if (i >= 15 && i < 50) {
+                delay = 60;
             } 
-            if (i >= 50 && i < 75) {
-                delay = 10;
-            }
-            if (i >= 75) {
-                delay = 5;
+            if (i >= 50) {
+                delay = 52;
             }
 
             totalDelayTime = totalDelayTime + delay;
@@ -40,48 +36,43 @@ module.exports = {
         var offsetFactor = 0;
         let speed = 0;
 
-        if (timeDiff > 0  && timeDiff < 18000) {
+        if (timeDiff > 0  && timeDiff < 38000) {
             offsetTime = 0;
-            offsetFactor = 1; 
-            speed = 120;
-            //speed: 18000/150 => 120 per 0.01 increment
+            offsetFactor = 1.0; 
+            speed = 190;
         } 
-        if (timeDiff >= 18000  && timeDiff < 43000) {
-            offsetTime = 18000;
-            offsetFactor = 2.5;
-            speed = 100;     //speed: 25000/250 => 100 per 0.01 increment
+        if (timeDiff >= 38000  && timeDiff < 60000) {
+            offsetTime = 38000;
+            offsetFactor = 3.0;
+            speed = 110;
         } 
-        if (timeDiff >= 43000  && timeDiff < 58000) {
-            offsetTime = 43000;
-            offsetFactor = 5;
-            speed = 60;     //speed: 15000/250 => 60 per 0.01 increment
+        if (timeDiff >= 60000  && timeDiff < 79500) {
+            offsetTime = 60000;
+            offsetFactor = 5.0;
+            speed = 65;    
         } 
-        if (timeDiff >= 58000  && timeDiff <= 68000) {
-            offsetTime = 58000;
-            offsetFactor = 7.5;
-            speed = 40;     //speed: 10000/250 => 40 per 0.01 increment
+        if (timeDiff >= 79500  && timeDiff < 95500) {
+            offsetTime = 79500;
+            offsetFactor = 8.0;
+            speed = 80;    
         }
-        if (timeDiff >= 68000  && timeDiff <= 112970) {
-            offsetTime = 68000;
-            offsetFactor = 10;
-            speed = 30;     //speed: 10000/250 => 40 per 0.01 increment
+        if (timeDiff >= 95500  && timeDiff < 135500) {
+            offsetTime = 95500;
+            offsetFactor = 10.0;
+            speed = 80;     
         }
-        if (timeDiff >= 112970  && timeDiff <= 162990) {
-            offsetTime = 112970;
-            offsetFactor = 25;
-            speed = 20;     //speed: 10000/250 => 40 per 0.01 increment
+        if (timeDiff >= 135500  && timeDiff < 345500) {
+            offsetTime = 135500;
+            offsetFactor = 15.0;
+            speed = 60;     
         }
-        if (timeDiff >= 162990  && timeDiff <= 187980) {
-            offsetTime = 162990;
-            offsetFactor = 50;
-            speed = 10;     //speed: 10000/250 => 40 per 0.01 increment
-        }
-        if (timeDiff >= 187980  && timeDiff <= 200480) {
-            offsetTime = 187980;
-            offsetFactor = 75;
-            speed = 5;     //speed: 10000/250 => 40 per 0.01 increment
+        if (timeDiff >= 345500) {
+            offsetTime = 345500;
+            offsetFactor = 50.0;
+            speed = 52;    
         }
 
+        //console.log(`((${timeDiff}-${offsetTime})/${speed} * 0.01) + ${offsetFactor}`)
         return ( ((timeDiff-offsetTime)/speed * 0.01) + offsetFactor).toFixed(2);  //currentCrashFactor
     }
 }
@@ -90,9 +81,15 @@ const gaussian = require("@wallfair.io/wallfair-commons").utils
     .getGaussian(0, 0.3);
 
 main = () => {
-    /*for (let i of [2.5, 5, 7.5, 10, 25, 50, 75, 100]) {
+    for (let i = 1; i < 101; i++) {
         console.log(i, module.exports.totalDelayTime(i),  module.exports.calculateCrashFactor(module.exports.totalDelayTime(i)));
+    }
+
+    /*for (let i of [2.5, 5, 7.5, 10, 25, 50, 75, 100]) {
+        console.log(i, module.exports.totalDelayTime(i) / 1000,  module.exports.calculateCrashFactor(module.exports.totalDelayTime(i)));
     }*/
+
+    return;
     let total = 0;
     let ones = 0;
 
