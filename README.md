@@ -13,25 +13,27 @@ The main functions are as follows:
     - Notifies listeners that game ended
     - Schedules the next start function
  - Handle failures and job retries
- - Handle concurrency with locks 
+ - Handle concurrency with locks
 
-## Provably fair algorithm 
+## Provably fair algorithm
 
 ### Current 10 000 000 (secured/hashes.txt) based on block:
 Current max rows in file is: `2,147,483,647` (INT type which we are using for PG)
 ```
-https://etherscan.io/block/13626940 
+https://etherscan.io/block/13626940
 Mined by #HASH
 PUBLIC SEED
 ```
 
 ### How to generate hashes for development use
 1. Pull latest @wallfair/commons package https://github.com/wallfair-organization/wallfair-commons
-2. Create a file to store hashes at `wallfair-commons/scripts/provably-fair/output/hashes.txt`   
-3. Run `wallfair-commons/scripts/provably-fair/generateHashes` with GENESIS_SEED environment variable specified.
-   GENESIS_SEED can be any string.
-4. Copy `hashes.txt` to `crash_game_backend/secured` 
-5. Use the same string for HASH_SEED environment variable as for GENESIS_SEED in step 3
+2. Create a file to store hashes at `wallfair-commons/scripts/provably-fair/output/hashes.txt`
+3. Run `wallfair-commons/scripts/provably-fair/generateHashes` with GENESIS_SECRET environment variable specified.
+4. Copy `hashes.txt` to `crash_game_backend/secured`
+5. put HASH_SEED in .env, its public seed will be used for crash-factor calculation / verification (jsfiddle):
+   Currently used public seeds:
+      - Elon game: 0xea674fdde714fd979de3edf0f56aa9716b898ec8
+      - Pump and dump: 0x45a36a8e118c37e4c47ef4ab827a7c9e579e11e2
 
 ## API
 
