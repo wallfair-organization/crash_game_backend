@@ -2,6 +2,8 @@
 const Agenda = require("agenda");
 const agenda = new Agenda({ db: { address: process.env.DB_CONNECTION, collection: `${process.env.GAME_NAME}_jobs` } });
 
+const { ONE } = require('@wallfair.io/trading-engine');
+
 const { rdsGet } = require('../utils/redis');
 
 if(!process.env.GAME_ID) throw 'No GAME_ID found. Please specify GAME_ID as environment variable'
@@ -26,7 +28,6 @@ const wallet = require("./wallet-service");
 // rabbitmq service
 const amqp = require('./amqp-service');
 
-const ONE = 10000n;
 const GAME_ID = process.env.GAME_ID;
 
 //Import sc mock
