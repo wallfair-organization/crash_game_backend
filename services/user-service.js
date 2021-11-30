@@ -1,15 +1,14 @@
-const { Erc20 } = require('@wallfair.io/smart_contract_mock');
-
+const { WFAIR, WFAIR_TOKEN } = require('../utils/casino-contracts');
 const {WFAIR_REWARDS} = require('../utils/constants')
 const {getCasinoGamePlayCount} = require("./statistics-service");
 const { notificationEvents } = require("@wallfair.io/wallfair-commons/constants/eventTypes");
 const amqp = require('./amqp-service');
-
-const WFAIR = new Erc20('WFAIR');
+const { ONE }  = require('@wallfair.io/trading-engine');
 
 exports.mintUser = async (userId, amount) => {
     if(amount) {
-        await WFAIR.mint(userId, BigInt(amount) * WFAIR.ONE).catch((err)=> {
+        const beneficiary = { owner: userId, namespace: 'cas', symbol: WFAIR_TOKEN };
+        await WFAIR.mint(beneficiary, BigInt(amount) * ONE).catch((err)=> {
             console.error("mintUser err", err);
         });
     }
