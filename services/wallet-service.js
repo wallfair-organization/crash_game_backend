@@ -1,21 +1,15 @@
-const wallfair = require("@wallfair.io/wallfair-commons");
-
-//Import sc mock
-const { CasinoTradeContract, Erc20, CASINO_TRADE_STATE } = require('@wallfair.io/smart_contract_mock');
-
+const { WFAIR, casinoContract, WFAIR_TOKEN } = require('../utils/casino-contracts');
+const { ONE }  = require('@wallfair.io/trading-engine');
 const CASINO_WALLET_ADDR = process.env.WALLET_ADDR || "CASINO";
 const WALLET_INITIAL_LIQUIDITY_TO_MINT = 1000000n;
 
-const WFAIR = new Erc20('WFAIR');
-const casinoContract = new CasinoTradeContract(CASINO_WALLET_ADDR);
-
 module.exports = {
     getBalance: async (walletAddr) => {
-        return (await WFAIR.balanceOf(walletAddr)) / WFAIR.ONE;
+        return (await WFAIR.getBalance(walletAddr)) / ONE;
     },
 
     placeTrade: async (userId, amount, crashFactor) => {
-        await casinoContract.placeTrade(userId.toString(), BigInt(amount) * WFAIR.ONE, crashFactor, process.env.GAME_ID);
+        await casinoContract.placeTrade(userId.toString(), BigInt(amount) * ONE, crashFactor, process.env.GAME_ID);
 
         // store an open trade and leave it open for the next game to grab
         console.log(new Date(), `User ${userId} placed traded of ${amount} WFAIR on a crash factor of ${crashFactor}`);
@@ -59,7 +53,9 @@ module.exports = {
         return module.exports.getBalance(CASINO_WALLET_ADDR);
     },
     mintInitialBalance: async () => {
-        await WFAIR.mint(CASINO_WALLET_ADDR, WALLET_INITIAL_LIQUIDITY_TO_MINT * WFAIR.ONE);
+        const beneficiary = { owner: CASINO_WALLET_ADDR, namespace: 'cas', symbol: WFAIR_TOKEN };
+        console.log(ONE,'ONE')
+        await WFAIR.mint(beneficiary, WALLET_INITIAL_LIQUIDITY_TO_MINT * ONE);
     },
     getLastHashLineGameType: async (gameId) => {
         let lastMatch = await casinoContract.getLastMatchByGameType(gameId);

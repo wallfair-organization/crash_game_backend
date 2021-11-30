@@ -52,15 +52,9 @@ var redis;
 
 // wallet service for wallet/blockchain operations
 const wallet = require("./wallet-service");
-const walletService = require('./wallet-service');
 const userService = require('./user-service');
 //Import sc mock
-const { CasinoTradeContract, Erc20 } = require('@wallfair.io/smart_contract_mock');
-
-const CASINO_WALLET_ADDR = process.env.WALLET_ADDR || "CASINO";
-const casinoContract = new CasinoTradeContract(CASINO_WALLET_ADDR);
-
-const WFAIR = new Erc20('WFAIR');
+const { casinoContract } = require('../utils/casino-contracts');
 
 // configure passport to use JWT strategy with KEY provide via environment variable
 // the secret key must be the same as the one used in the main application
@@ -123,7 +117,6 @@ server.get('/api/current', async (req, res) => {
         musicIndex,
         bgIndex
     } = await rdsGet(redis, GAME_ID);
-
     const {currentBets, upcomingBets, cashedOutBets} = await casinoContract.getBets(gameHash, GAME_ID)
     const userIds = [...currentBets, ...upcomingBets, ...cashedOutBets]
       .map(b => mongoose.Types.ObjectId(b.userid))
@@ -175,7 +168,7 @@ server.post('/api/cashout', passport.authenticate('jwt', { session: false }), as
             return;
         }
 
-        let { totalReward, stakedAmount } = await walletService.attemptCashout(req.user._id.toString(), crashFactor, gameHash);
+        let { totalReward, stakedAmount } = await wallet.attemptCashout(req.user._id.toString(), crashFactor, gameHash);
 
         const pubData = {
             crashFactor,

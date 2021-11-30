@@ -14,6 +14,8 @@ const wallet = require("./services/wallet-service");
 // init commons and mongoose
 const mongoose = require('mongoose');
 const wallfair = require('@wallfair.io/wallfair-commons');
+const { initDb } = require('@wallfair.io/trading-engine');
+const { initDatabase } = require('@wallfair.io/casino-engine');
 
 // Create Redis pub client, which will be used to send out notifications
 const { createClient } = require("redis");
@@ -46,6 +48,10 @@ amqp.init();
  * Starts the scheduler agent and handles the creation of the first job ever.
  */
 (async function () {
+
+    await initDb();
+    await initDatabase();
+
     let mongoURL = process.env.DB_CONNECTION;
 
     // start mongoose
@@ -70,7 +76,6 @@ amqp.init();
     // init http server
     console.log(new Date(), "Initializing app server.")
     appServer.init(pubClient);
-
     // init scheduling service
     console.log(new Date(), "Initializing scheduler");
     await scheduler.init(pubClient);

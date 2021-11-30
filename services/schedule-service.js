@@ -1,5 +1,3 @@
-const {performance} = require('perf_hooks');
-
 // create scheduling tool
 const Agenda = require("agenda");
 const agenda = new Agenda({ db: { address: process.env.DB_CONNECTION, collection: `${process.env.GAME_NAME}_jobs` } });
@@ -32,14 +30,11 @@ const ONE = 10000n;
 const GAME_ID = process.env.GAME_ID;
 
 //Import sc mock
-const { CasinoTradeContract, Erc20 } = require('@wallfair.io/smart_contract_mock');
+const { casinoContract } = require('../utils/casino-contracts');
 
 const { notificationEvents } = require("@wallfair.io/wallfair-commons/constants/eventTypes");
 const mongoose = require("mongoose");
 const wallfair = require("@wallfair.io/wallfair-commons");
-
-const CASINO_WALLET_ADDR = process.env.WALLET_ADDR || "CASINO";
-const casinoContract = new CasinoTradeContract(CASINO_WALLET_ADDR);
 
 const {readHashByLine, crashFactorFromHash} = require('../utils/hash_utils');
 /**
@@ -233,7 +228,6 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
  */
 agenda.define("game_close", async (job) => {
     const {gameHash, crashFactor} = job.attrs.data;
-
     //Set proper state (3) and crash factor for all lost user trades in casino_trades table
     const lostTrades = await casinoContract.setLostTrades(gameHash.toString(), crashFactor).catch((err) => {
         console.error(`setLostTradesByGameHash failed ${gameHash}`, err);
