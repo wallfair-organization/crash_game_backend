@@ -42,6 +42,12 @@ spec:
               name: app-secrets
           - configMapRef:
               name: crash-game-config
+          - configMapRef:
+              name: postgres-conn
+          - configMapRef:
+              name: mongo-conn
+          - configMapRef:
+              name: redis-conn
           env:
             - name: GAME_NAME
               value: CASINO_ROSI
@@ -65,18 +71,3 @@ spec:
     kind: Deployment
     name: crash-game
   targetCPUUtilizationPercentage: 50
-
----
-
-apiVersion: v1
-kind: Service
-metadata:
-  name: crash-game-backend
-  namespace: staging
-spec:
-  selector:
-    app: crash-game
-  ports:
-    - protocol: TCP
-      port: 80
-      targetPort: 8001
