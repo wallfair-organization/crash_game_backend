@@ -69,9 +69,9 @@ amqp.init();
 
     // mint initial liquidity if casino balance is 0.
     // (Balance should never reach 0 again)
-    if (casinoBalance == 0) {
-        await wallet.mintInitialBalance();
-    }
+    // if (casinoBalance == 0) {
+    //     await wallet.mintInitialBalance();
+    // }
 
     // init http server
     console.log(new Date(), "Initializing app server.")
