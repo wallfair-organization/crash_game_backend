@@ -42,6 +42,12 @@ spec:
               name: app-secrets
           - configMapRef:
               name: pump-dump-game-config
+          - configMapRef:
+              name: postgres-conn
+          - configMapRef:
+              name: mongo-conn
+          - configMapRef:
+              name: redis-conn
           env:
             - name: GAME_NAME
               value: PUMP_DUMP
@@ -65,18 +71,3 @@ spec:
     kind: Deployment
     name: pump-dump-game
   targetCPUUtilizationPercentage: 50
-
----
-
-apiVersion: v1
-kind: Service
-metadata:
-  name: pump-dump-game-backend
-  namespace: staging
-spec:
-  selector:
-    app: pump-dump-game
-  ports:
-    - protocol: TCP
-      port: 80
-      targetPort: 8001
