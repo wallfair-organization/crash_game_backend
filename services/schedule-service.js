@@ -31,7 +31,7 @@ const amqp = require('./amqp-service');
 const GAME_ID = process.env.GAME_ID;
 
 //Import sc mock
-const { getCasinoContract } = require('../utils/casino-contracts');
+const { casinoContract } = require('../utils/casino-contracts');
 
 const { notificationEvents } = require("@wallfair.io/wallfair-commons/constants/eventTypes");
 const mongoose = require("mongoose");
@@ -227,7 +227,6 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
  * This method will trigger in the background, after each game ends
  */
 agenda.define("game_close", async (job) => {
-    const casinoContract = await getCasinoContract();
     const {gameHash, crashFactor} = job.attrs.data;
     //Set proper state (3) and crash factor for all lost user trades in casino_trades table
     const lostTrades = await casinoContract.setLostTrades(gameHash.toString(), crashFactor).catch((err) => {
