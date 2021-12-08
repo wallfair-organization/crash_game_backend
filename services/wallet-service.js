@@ -1,8 +1,7 @@
 //Import sc mock
 const { getWallet, casinoContract, CASINO_WALLET_ADDR, WFAIR_TOKEN } = require("../utils/casino-contracts");
-const { ONE, Wallet, AccountNamespace }  = require('@wallfair.io/trading-engine');
+const { ONE, Wallet, AccountNamespace, BN }  = require('@wallfair.io/trading-engine');
 const { CASINO_TRADE_STATE } = require('@wallfair.io/wallfair-casino');
-const { default: BigNumber } = require("bignumber.js");
 
 const WFAIR = new Wallet();
 const CASINO_WALLET = process.env.CASINO_WALLET;
@@ -12,7 +11,7 @@ module.exports = {
     getBalance: async (walletAddr) => {
         const balance = await WFAIR.getBalance(walletAddr);
         console.log("balance: ", balance, walletAddr)
-        return new BigNumber(balance).dividedBy(ONE.toString());
+        return new BN(balance).dividedBy(ONE.toString());
     },
     placeTrade: async (userId, amount, crashFactor, gameId) => {
         await casinoContract.placeTrade(userId.toString(), BigInt(amount) * ONE, crashFactor, gameId);
@@ -78,7 +77,7 @@ module.exports = {
         const ethBalance = await WFAIR.getBalance(CASINO_WALLET, AccountNamespace.ETH);
         console.log(new Date(), `Casino eth balance loaded with ${ethBalance} WFAIR`);
 
-        if (new BigNumber(ethBalance).isGreaterThan(0)) {
+        if (new BN(ethBalance).isGreaterThan(0)) {
             await WFAIR.transfer(
                 {
                     owner: CASINO_WALLET,
@@ -95,7 +94,7 @@ module.exports = {
         } else {
             const casinoBalance = await WFAIR.getBalance(CASINO_WALLET_ADDR, AccountNamespace.CAS);
             console.log('Current casino balance ', casinoBalance);
-            if (new BigNumber(casinoBalance).isLessThanOrEqualTo(0)) {
+            if (new BN(casinoBalance).isLessThanOrEqualTo(0)) {
                 console.error(new Date(), 'Casino wallet is out of tokens. Quitting gracefully...');
                 process.exit(0);
             }
