@@ -15,7 +15,6 @@ const wallet = require("./services/wallet-service");
 const mongoose = require('mongoose');
 const wallfair = require('@wallfair.io/wallfair-commons');
 const { initDb } = require('@wallfair.io/trading-engine');
-const { initDatabase } = require('@wallfair.io/wallfair-casino');
 
 // Create Redis pub client, which will be used to send out notifications
 const { createClient } = require("redis");
