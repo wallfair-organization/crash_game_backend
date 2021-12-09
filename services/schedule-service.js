@@ -1,8 +1,10 @@
 // create scheduling tool
 const Agenda = require("agenda");
 const agenda = new Agenda({ db: { address: process.env.DB_CONNECTION, collection: `${process.env.GAME_NAME}_jobs` } });
+const _ = require('lodash');
 
 const { ONE } = require('@wallfair.io/trading-engine');
+const {fromScaledBigInt} = require('../utils/number-helper');
 
 const { rdsGet } = require('../utils/redis');
 
@@ -233,12 +235,14 @@ agenda.define("game_close", async (job) => {
         console.error(`setLostTradesByGameHash failed ${gameHash}`, err);
     })
 
-    if(lostTrades && lostTrades.length) {
-        const userIds = [...lostTrades].map(b => mongoose.Types.ObjectId(b.userid));
+    const lostTradesArr = lostTrades?.[0];
+
+    if(lostTradesArr && lostTradesArr.length) {
+        const userIds = [...lostTradesArr].map(b => mongoose.Types.ObjectId(b.userid));
         const users = await wallfair.models.User.find({_id: {$in: [...userIds]}}, {username: 1, _id: 1})
 
-        lostTrades.forEach((trade) => {
-            let stakedAmount = parseInt(trade.stakedamount) / Number(ONE);
+        lostTradesArr.forEach((trade) => {
+            let stakedAmount = fromScaledBigInt(trade.stakedamount);
             const user = users.find(u => u._id.toString() === trade.userid);
 
             const payload = {
