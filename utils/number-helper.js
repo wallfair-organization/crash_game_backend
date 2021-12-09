@@ -2,7 +2,7 @@ const _ = require("lodash");
 const { ONE, BN }  = require('@wallfair.io/trading-engine');
 
 const toScaledBigInt = (input) => {
-  return BigInt(input) * ONE;
+  return BigInt(new BN(input).times(ONE).decimalPlaces(0));
 };
 
 const fromScaledBigInt = (input) => {
