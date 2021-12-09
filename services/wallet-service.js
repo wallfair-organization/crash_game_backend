@@ -1,15 +1,14 @@
 //Import sc mock
-const { getWallet, casinoContract, CASINO_WALLET_ADDR, WFAIR_TOKEN } = require("../utils/casino-contracts");
+const { casinoContract, CASINO_WALLET_ADDR } = require("../utils/casino-contracts");
 const { ONE, Wallet, AccountNamespace, BN }  = require('@wallfair.io/trading-engine');
 const { CASINO_TRADE_STATE } = require('@wallfair.io/wallfair-casino');
 
-const WFAIR = new Wallet();
 const CASINO_WALLET = process.env.CASINO_WALLET;
 const WFAIR_SYMBOL = 'WFAIR';
 
 module.exports = {
     getBalance: async (walletAddr) => {
-        const balance = await WFAIR.getBalance(walletAddr);
+        const balance = await new Wallet().getBalance(walletAddr);
         console.log("balance: ", balance, walletAddr)
         return new BN(balance).dividedBy(ONE.toString());
     },
@@ -74,11 +73,12 @@ module.exports = {
       console.log(new Date(), `All open trades locked in game ${gameHash}`);
     },
     transferLiquidity: async () => {
-        const ethBalance = await WFAIR.getBalance(CASINO_WALLET, AccountNamespace.ETH);
+        const wallet = new Wallet();
+        const ethBalance = await wallet.getBalance(CASINO_WALLET, AccountNamespace.ETH);
         console.log(new Date(), `Casino eth balance loaded with ${ethBalance} WFAIR`);
 
         if (new BN(ethBalance).isGreaterThan(0)) {
-            await WFAIR.transfer(
+            await wallet.transfer(
                 {
                     owner: CASINO_WALLET,
                     namespace: AccountNamespace.ETH,
@@ -92,7 +92,7 @@ module.exports = {
                 ethBalance
             );
         } else {
-            const casinoBalance = await WFAIR.getBalance(CASINO_WALLET_ADDR, AccountNamespace.CAS);
+            const casinoBalance = await wallet.getBalance(CASINO_WALLET_ADDR, AccountNamespace.CAS);
             console.log('Current casino balance ', casinoBalance);
             if (new BN(casinoBalance).isLessThanOrEqualTo(0)) {
                 console.error(new Date(), 'Casino wallet is out of tokens. Quitting gracefully...');
