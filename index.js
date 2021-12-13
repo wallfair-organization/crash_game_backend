@@ -16,6 +16,8 @@ const mongoose = require('mongoose');
 const wallfair = require('@wallfair.io/wallfair-commons');
 const { initDb } = require('@wallfair.io/trading-engine');
 
+const {generateListOfHashes} = require('./utils/hash_utils');
+
 // Create Redis pub client, which will be used to send out notifications
 const { createClient } = require("redis");
 const pubClient = createClient({
@@ -40,6 +42,8 @@ try {
 }
 
 const amqp = require('./services/amqp-service');
+const {performance} = require("perf_hooks");
+const fs = require("fs");
 amqp.init();
 
 /**
@@ -47,6 +51,12 @@ amqp.init();
  * Starts the scheduler agent and handles the creation of the first job ever.
  */
 (async function () {
+    //generate 2mln hashes for crash game, set in memory
+    const startTimeHashes = performance.now()
+    const hashesChainLength = 2_000_000;
+    generateListOfHashes(hashesChainLength);
+    const stopTimeHashes = performance.now();
+    console.log(`${hashesChainLength} hashes have been generated in ${(stopTimeHashes - startTimeHashes)/1000} seconds.`)
 
     await initDb();
 

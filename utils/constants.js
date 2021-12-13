@@ -9,6 +9,9 @@ const WFAIR_REWARDS = {
   }
 };
 
+const SECRET_HASHES = [];
+
 module.exports = {
-  WFAIR_REWARDS
+  WFAIR_REWARDS,
+  SECRET_HASHES
 };

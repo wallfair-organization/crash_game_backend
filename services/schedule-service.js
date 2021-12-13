@@ -39,7 +39,7 @@ const { notificationEvents } = require("@wallfair.io/wallfair-commons/constants/
 const mongoose = require("mongoose");
 const wallfair = require("@wallfair.io/wallfair-commons");
 
-const {readHashByLine, crashFactorFromHash} = require('../utils/hash_utils');
+const {readHashByMemoryLine, crashFactorFromHash} = require('../utils/hash_utils');
 /**
  * Method for starting the game.
  * This method decides the crash factor, and schedules the end of the game.
@@ -78,9 +78,8 @@ const {readHashByLine, crashFactorFromHash} = require('../utils/hash_utils');
     const currentHashLine = lastHashLine ? lastHashLine+1 : 1;
 
      //average time to find very last record = 1.2352231789994985
-     const hashByLine = await readHashByLine(currentHashLine).catch((err) => {
-         console.error(`readFileLine failed`, err);
-     });
+     const hashByLine = await readHashByMemoryLine(currentHashLine);
+
      const currentCrashFactor = crashFactorFromHash(hashByLine);
 
      // decides on a crash factor
