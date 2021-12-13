@@ -238,39 +238,48 @@ agenda.define("game_close", async (job) => {
 
     if(lostTradesArr && lostTradesArr.length) {
         const userIds = [...lostTradesArr].map(b => mongoose.Types.ObjectId(b.userid));
-        const users = await wallfair.models.User.find({_id: {$in: [...userIds]}}, {username: 1, _id: 1})
+        const users = await wallfair.models.User.find({_id: {$in: [...userIds]}}, {username: 1, ref: 1, _id: 1})
 
-        lostTradesArr.forEach((trade) => {
-            let stakedAmount = fromScaledBigInt(trade.stakedamount);
-            const user = users.find(u => u._id.toString() === trade.userid);
 
-            const payload = {
-                crashFactor,
-                gameHash: gameHash,
-                gameName: GAME_NAME,
-                gameTypeId: GAME_ID,
-                stakedAmount,
-                userId: trade.userid,
-                username: user?.username,
-                updatedAt: Date.now()
-            };
+      for (const trade of lostTradesArr) {
+        let stakedAmount = fromScaledBigInt(trade.stakedamount);
+        const user = users.find(u => u._id.toString() === trade.userid);
+        const ref = user?.ref || null;
 
-            amqp.send('crash_game', 'casino.lost', JSON.stringify({
-                to: GAME_ID,
-                event: "CASINO_LOST",
-                ...payload
-            }))
+        const payload = {
+          crashFactor,
+          gameHash: gameHash,
+          gameName: GAME_NAME,
+          gameTypeId: GAME_ID,
+          stakedAmount,
+          userId: trade.userid,
+          username: user?.username,
+          updatedAt: Date.now()
+        };
 
-            // publish message for uniEvent
-            amqp.send('universal_events', 'casino.lost', JSON.stringify({
-                event: notificationEvents.EVENT_CASINO_LOST,
-                producer: 'user',
-                producerId: payload.userId,
-                data: payload,
-                date: Date.now(),
-                broadcast: true
-            }))
-        })
+        //handle new referal system
+        if(ref) {
+          await wallet.transferRefRewards(ref, trade.stakedamount).catch((err) => {
+            console.error(`transferRefRewards failed ${ref} - ${fromScaledBigInt(trade.stakedamount)}`, err);
+          })
+        }
+
+        amqp.send('crash_game', 'casino.lost', JSON.stringify({
+          to: GAME_ID,
+          event: "CASINO_LOST",
+          ...payload
+        }))
+
+        // publish message for uniEvent
+        amqp.send('universal_events', 'casino.lost', JSON.stringify({
+          event: notificationEvents.EVENT_CASINO_LOST,
+          producer: 'user',
+          producerId: payload.userId,
+          data: payload,
+          date: Date.now(),
+          broadcast: true
+        }))
+      }
     }
 
     //Calculate proper values: amountinvestedsum, amountrewardedsum, numtrades, numcashouts and set them in casino_matches table
