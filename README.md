@@ -127,6 +127,28 @@ RESPONSE:
 }
 ```
 
+### Provably fair
+Related env variables names:
+- HASH_SEED - PUBLIC SEED, hash from BTC block
+- CRASHGAME_SEED_SECRET - based on this we will generate hashes chain for crash game (2_000_000) when crash game start and store it in memory
+#### Elon game public seed:
+```js
+//Hash from BTC block #XXXXX.
+// https://www.blockchain.com/btc/block/713947
+// AS
+// public seed
+const PUBLIC_SEED = '0000000000000000000b67781ed2770ccf35c15006de5df06efa99a65323b82f';
+```
+
+#### Pump Dump game public seed:
+```js
+//Hash from BTC block #XXXXX.
+// https://www.blockchain.com/btc/block/713946
+// AS
+// public seed
+const PUBLIC_SEED = '0000000000000000000b4984b5442f1059816a4065fa0f21cbf61d816dc2fa64';
+```
+
 ## Additional Info
 
 Author: [Guilherme Mussi, Lead Engineer](https://github.com/gmussi/)
