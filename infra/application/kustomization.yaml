@@ -6,8 +6,6 @@ configMapGenerator:
   - name: crash-game-config
     envs:
       - environment-crashgame
-
-configMapGenerator:
   - name: pump-dump-game-config
     envs:
       - environment-pumpdump
