@@ -130,7 +130,7 @@ RESPONSE:
 ### Provably fair
 Related env variables names:
 - HASH_SEED - PUBLIC SEED, hash from BTC block
-- SERVER_SEED_SECRET - based on this we will generate hashes chain for crash games (2_000_000) when crash game start and store it in memory
+- CRASHGAME_SEED_SECRET - based on this we will generate hashes chain for crash game (2_000_000) when crash game start and store it in memory
 #### Elon game public seed:
 ```js
 //Hash from BTC block #XXXXX.

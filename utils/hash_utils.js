@@ -20,10 +20,10 @@ const {SECRET_HASHES} = require('../utils/constants');
 // public seed
 // 0000000000000000000b4984b5442f1059816a4065fa0f21cbf61d816dc2fa64
 const PUBLIC_SEED = process.env.HASH_SEED;
-const SERVER_SEED_SECRET = process.env.SERVER_SEED_SECRET;
+const CRASHGAME_SEED_SECRET = process.env.CRASHGAME_SEED_SECRET;
 
-if (!SERVER_SEED_SECRET) {
-  throw new Error('SERVER_SEED_SECRET must be set!');
+if (!CRASHGAME_SEED_SECRET) {
+  throw new Error('CRASHGAME_SEED_SECRET must be set!');
 }
 
 if (!PUBLIC_SEED) {
@@ -124,7 +124,7 @@ const generateHash = (seed) => {
 
 const generateListOfHashes = (totalHashes = 5) => {
   lastGame = totalHashes;
-  lastHash = generateHash(SERVER_SEED_SECRET);
+  lastHash = generateHash(CRASHGAME_SEED_SECRET);
 
   // IMPORTANT: Order of the hashes. Last GameID has the first hash dubbed lastHash. First GameID has last hash of the hash chain!
   // arr.push([lastGame, lastHash]); // Write to database
