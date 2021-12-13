@@ -257,10 +257,11 @@ agenda.define("game_close", async (job) => {
           updatedAt: Date.now()
         };
 
-        //handle new referal system
+        //handle new referal system, transfer 20% of the lost funds back to the user ref
         if(ref) {
-          await wallet.transferRefRewards(ref, trade.stakedamount).catch((err) => {
-            console.error(`transferRefRewards failed ${ref} - ${fromScaledBigInt(trade.stakedamount)}`, err);
+          const bnStakedAmount = trade.stakedamount || 0n;
+          await wallet.transferRefRewards(ref, bnStakedAmount).catch((err) => {
+            console.error(`transferRefRewards failed ${ref} - ${stakedAmount}`, err);
           })
         }
 
