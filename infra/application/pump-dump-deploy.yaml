@@ -14,32 +14,17 @@ spec:
       labels:
         app: pump-dump-game
     spec:
-      volumes:
-        - name: hashes-volume
-          emptyDir: {}
-      initContainers:
-        - name: download-hashes
-          image: busybox
-          command:
-            - wget
-            - "-O"
-            - "/work/hashes.txt"
-            - https://wallfair-hashes.ams3.digitaloceanspaces.com/hashes_pump_dump.txt 
-          volumeMounts:
-            - name: hashes-volume
-              mountPath: "/work"
       containers:
         - image: registry.digitalocean.com/wallfair/crash-game-k8s
           imagePullPolicy: Always
           name: pump-dump-game
-          volumeMounts:
-            - name: hashes-volume
-              mountPath: "/usr/src/app/secured/"
           envFrom:
           - configMapRef:
               name: app-config
           - configMapRef:
               name: app-secrets
+          - configMapRef:
+              name: pump-dump-game-secrets
           - configMapRef:
               name: pump-dump-game-config
           - configMapRef:
@@ -48,11 +33,6 @@ spec:
               name: mongo-conn
           - configMapRef:
               name: redis-conn
-          env:
-            - name: GAME_NAME
-              value: PUMP_DUMP
-            - name: GAME_ID
-              value: 61817de6a9695acd029ffef3
           ports:
             - containerPort: 80
 

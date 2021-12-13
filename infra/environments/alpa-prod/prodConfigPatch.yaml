@@ -13,6 +13,8 @@ spec:
           - configMapRef:
               name: backend-production-values
           - configMapRef:
+              name: crash-game-secrets
+          - configMapRef:
               name: postgres-conn
           - configMapRef:
               name: mongo-conn
@@ -35,6 +37,8 @@ spec:
               name: app-secrets
           - configMapRef:
               name: backend-production-values
+          - configMapRef:
+              name: pump-dump-game-secrets
           - configMapRef:
               name: postgres-conn
           - configMapRef:
