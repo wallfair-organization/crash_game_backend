@@ -9,6 +9,8 @@ spec:
         - name: crash-game
           envFrom:
           - configMapRef:
+              name: crash-game-config
+          - configMapRef:
               name: app-global-secrets
           - configMapRef:
               name: crash-game-secrets
@@ -31,6 +33,8 @@ spec:
       containers:
         - name: pump-dump-game
           envFrom:
+          - configMapRef:
+              name: pump-dump-game-config
           - configMapRef:
               name: app-global-secrets
           - configMapRef:
