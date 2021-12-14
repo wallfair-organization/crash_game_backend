@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: crash-game
+spec:
+  template:
+    spec:
+      containers:
+        - name: crash-game
+          envFrom:
+          - configMapRef:
+              name: app-global-secrets
+          - configMapRef:
+              name: crash-game-secrets
+          - configMapRef:
+              name: postgres-conn
+          - configMapRef:
+              name: mongo-conn
+          - configMapRef:
+              name: redis-conn
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pump-dump-game
+spec:
+  template:
+    spec:
+      containers:
+        - name: pump-dump-game
+          envFrom:
+          - configMapRef:
+              name: app-global-secrets
+          - configMapRef:
+              name: pump-dump-game-secrets
+          - configMapRef:
+              name: postgres-conn
+          - configMapRef:
+              name: mongo-conn
+          - configMapRef:
+              name: redis-conn

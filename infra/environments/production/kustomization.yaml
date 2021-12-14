@@ -1,0 +1,23 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+- ../../application
+
+namespace: production
+commonLabels:
+  environment: production
+
+patches:
+  - prodConfigPatch.yaml
+  - replicasPatch.yaml
+  - resourcesPatch.yaml
+
+configMapGenerator:
+  - name: crash-game-config
+    behavior: merge
+    envs:
+      - environment-crashgame
+  - name: pump-dump-game-config
+    behavior: merge
+    envs:
+      - environment-pumpdump
