@@ -257,14 +257,6 @@ agenda.define("game_close", async (job) => {
           updatedAt: Date.now()
         };
 
-        //handle new referal system, transfer 20% of the lost funds back to the user ref
-        if(ref) {
-          const bnStakedAmount = trade.stakedamount || 0n;
-          await wallet.transferRefRewards(ref, bnStakedAmount).catch((err) => {
-            console.error(`transferRefRewards failed ${ref} - ${stakedAmount}`, err);
-          })
-        }
-
         amqp.send('crash_game', 'casino.lost', JSON.stringify({
           to: GAME_ID,
           event: "CASINO_LOST",

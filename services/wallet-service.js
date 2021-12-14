@@ -100,26 +100,5 @@ module.exports = {
                 process.exit(0);
             }
         }
-    },
-    transferRefRewards: async (userId, amount) => {
-      const wallet = new Wallet();
-      const rewardPercent = parseFloat(GAMES_REF_PERCENT_REWARD) / 100;
-      const amountForRefUser = new BN(amount).multipliedBy(rewardPercent).toString();
-
-      if (new BN(amountForRefUser).isGreaterThan(0)) {
-        await wallet.transfer(
-          {
-            owner: CASINO_WALLET,
-            namespace: AccountNamespace.CAS,
-            symbol: WFAIR_SYMBOL
-          },
-          {
-            owner: userId,
-            namespace: AccountNamespace.USR,
-            symbol: WFAIR_SYMBOL
-          },
-          amountForRefUser
-        );
-      }
     }
 }
