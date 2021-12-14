@@ -253,6 +253,7 @@ agenda.define("game_close", async (job) => {
           gameTypeId: GAME_ID,
           stakedAmount,
           profit,
+          tradeId: trade.id,
           userId: trade.userid,
           username: user?.username,
           updatedAt: Date.now()
