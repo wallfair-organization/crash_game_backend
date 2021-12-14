@@ -4,7 +4,7 @@ const agenda = new Agenda({ db: { address: process.env.DB_CONNECTION, collection
 const _ = require('lodash');
 
 const { ONE } = require('@wallfair.io/trading-engine');
-const {fromScaledBigInt} = require('../utils/number-helper');
+const {fromScaledBigInt, getProfit} = require('../utils/number-helper');
 
 const { rdsGet } = require('../utils/redis');
 
@@ -244,7 +244,7 @@ agenda.define("game_close", async (job) => {
       for (const trade of lostTradesArr) {
         let stakedAmount = fromScaledBigInt(trade.stakedamount);
         const user = users.find(u => u._id.toString() === trade.userid);
-        const ref = user?.ref || null;
+        const profit = getProfit(stakedAmount, 0);
 
         const payload = {
           crashFactor,
@@ -252,6 +252,7 @@ agenda.define("game_close", async (job) => {
           gameName: GAME_NAME,
           gameTypeId: GAME_ID,
           stakedAmount,
+          profit,
           userId: trade.userid,
           username: user?.username,
           updatedAt: Date.now()
