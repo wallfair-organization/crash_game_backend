@@ -20,6 +20,8 @@ spec:
               name: mongo-conn
           - configMapRef:
               name: redis-conn
+          - configMapRef:
+              name: rabbit-conn
 
 ---
 
@@ -45,3 +47,5 @@ spec:
               name: mongo-conn
           - configMapRef:
               name: redis-conn
+          - configMapRef:
+              name: rabbit-conn
