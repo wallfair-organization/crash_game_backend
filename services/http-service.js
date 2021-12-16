@@ -3,8 +3,6 @@ const passport = require('passport');
 const express = require('express');
 const http    = require('http');
 const cors    = require('cors');
-const mongoose = require('mongoose')
-const { rdsGet } = require('../utils/redis');
 const corsOptions = {
     origin: ["wallfair.io",
         /\.wallfair\.io$/,
@@ -27,34 +25,13 @@ const corsOptions = {
     preflightContinue: false,
 }
 
-const {fromScaledBigInt} = require('../utils/number-helper')
-
 const JWTstrategy = require('passport-jwt').Strategy;
 const ExtractJWT = require('passport-jwt').ExtractJwt;
 
 const wallfair = require("@wallfair.io/wallfair-commons");
-const { notificationEvents } = require("@wallfair.io/wallfair-commons/constants/eventTypes");
-
-const { agenda } = require("./schedule-service");
-
-const amqp = require('./amqp-service');
-
-const crashUtils = require("../utils/crash_utils");
-
-
-// define constants that can be overriden in .env
-const GAME_NAME = process.env.GAME_NAME || "ROSI";
-const GAME_ID = process.env.GAME_ID || '614381d74f78686665a5bb76';
-const MAX_AMOUNT_PER_TRADE = process.env.MAX_AMOUNT_PER_TRADE ? parseInt(process.env.MAX_AMOUNT_PER_TRADE) : 10000;
 
 // redis publisher used to notify others of updates
 var redis;
-
-// wallet service for wallet/blockchain operations
-const wallet = require("./wallet-service");
-const userService = require('./user-service');
-//Import sc mock
-const { casinoContract } = require('../utils/casino-contracts');
 
 // configure passport to use JWT strategy with KEY provide via environment variable
 // the secret key must be the same as the one used in the main application
