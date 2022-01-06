@@ -3,8 +3,8 @@ const Agenda = require("agenda");
 const agenda = new Agenda({ db: { address: process.env.DB_CONNECTION, collection: `${process.env.GAME_NAME}_jobs` } });
 const _ = require('lodash');
 
-const { ONE } = require('@wallfair.io/trading-engine');
 const {fromScaledBigInt} = require('../utils/number-helper');
+const {findUser} = require('../services/user-service');
 
 const { rdsGet } = require('../utils/redis');
 
@@ -12,13 +12,6 @@ if(!process.env.GAME_ID) throw 'No GAME_ID found. Please specify GAME_ID as envi
 // define constants that can be overriden in .env
 const GAME_INTERVAL_IN_SECONDS = process.env.GAME_INTERVAL_IN_SECONDS || 5;
 const GAME_NAME = process.env.GAME_NAME || "ROSI";
-const GAUSSIAN_MEAN = parseFloat(process.env.GAUSSIAN_MEAN || 0.0);
-const GAUSSIAN_STDEV = parseFloat(process.env.GAUSSIAN_STDEV || 0.1);
-
-// import gaussian function
-const gaussian = require("@wallfair.io/wallfair-commons").utils
-    .getGaussian(parseFloat(GAUSSIAN_MEAN), parseFloat(GAUSSIAN_STDEV));
-// import length of gam
 
 const crashUtils = require("../utils/crash_utils");
 
@@ -37,9 +30,9 @@ const { casinoContract } = require('../utils/casino-contracts');
 
 const { notificationEvents } = require("@wallfair.io/wallfair-commons/constants/eventTypes");
 const mongoose = require("mongoose");
-const wallfair = require("@wallfair.io/wallfair-commons");
 
 const {readHashByMemoryLine, crashFactorFromHash} = require('../utils/hash_utils');
+const usersCommonService = require("../../wallfair-commons/services/users");
 /**
  * Method for starting the game.
  * This method decides the crash factor, and schedules the end of the game.
@@ -238,12 +231,13 @@ agenda.define("game_close", async (job) => {
     const lostTradesArr = lostTrades?.[0];
 
     if(lostTradesArr && lostTradesArr.length) {
+        const usersService = usersCommonService.getService();
         const userIds = [...lostTradesArr].map(b => mongoose.Types.ObjectId(b.userid));
-        const users = await wallfair.models.User.find({_id: {$in: [...userIds]}}, {username: 1, _id: 1})
+        const users = await usersService.getUsersById(userIds, ['username', '_id']);
 
         lostTradesArr.forEach((trade) => {
             let stakedAmount = fromScaledBigInt(trade.stakedamount);
-            const user = users.find(u => u._id.toString() === trade.userid);
+            const user = findUser(users, trade.userid);
 
             const payload = {
                 crashFactor: lostCrashFactor,

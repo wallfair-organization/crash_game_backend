@@ -28,7 +28,7 @@ const corsOptions = {
 const JWTstrategy = require('passport-jwt').Strategy;
 const ExtractJWT = require('passport-jwt').ExtractJwt;
 
-const wallfair = require("@wallfair.io/wallfair-commons");
+const usersCommonService = require("../../wallfair-commons/services/users");
 
 // redis publisher used to notify others of updates
 var redis;
@@ -43,7 +43,8 @@ passport.use('jwt',
         },
         async (token, done) => {
             try {
-                let user = await wallfair.models.User.findById(token.userId).exec();
+                const usersService = usersCommonService.getService();
+                const user = await usersService.getUserById(token.userId);
                 return done(null, user);
             } catch (error) {
                 done(error);
