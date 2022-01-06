@@ -4,7 +4,6 @@ const agenda = new Agenda({ db: { address: process.env.DB_CONNECTION, collection
 const _ = require('lodash');
 
 const {fromScaledBigInt} = require('../utils/number-helper');
-const {findUser} = require('../services/user-service');
 
 const { rdsGet } = require('../utils/redis');
 
@@ -237,7 +236,7 @@ agenda.define("game_close", async (job) => {
 
         lostTradesArr.forEach((trade) => {
             let stakedAmount = fromScaledBigInt(trade.stakedamount);
-            const user = findUser(users, trade.userid);
+            const user = usersCommonService.helpers.findUserByFilter(users, trade.userid);
 
             const payload = {
                 crashFactor: lostCrashFactor,
