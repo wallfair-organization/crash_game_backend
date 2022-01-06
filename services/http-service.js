@@ -45,6 +45,9 @@ passport.use('jwt',
             try {
                 const usersService = usersCommonService.getService();
                 const user = await usersService.getUserById(token.userId);
+                user._id = user._id || user.userid;
+                user.id = user._id || user.userid;
+
                 return done(null, user);
             } catch (error) {
                 done(error);
