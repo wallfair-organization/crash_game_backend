@@ -44,7 +44,31 @@ try {
 const amqp = require('./services/amqp-service');
 const {performance} = require("perf_hooks");
 const fs = require("fs");
+const usersCommonService = require("../wallfair-commons/services/users");
 amqp.init();
+
+
+let mongoURL = process.env.DB_CONNECTION;
+
+let pgConnection, mongoDBConnection;
+
+// Connection to Database
+async function connectMongoDB() {
+  await mongoose.connect(mongoURL, {
+    useUnifiedTopology: true,
+    useNewUrlParser: true,
+    useFindAndModify: false,
+    useCreateIndex: true,
+    readPreference: 'primary',
+    retryWrites: true,
+  });
+  console.log('Connection to Mongo-DB successful');
+
+  wallfair.initModels(mongoose);
+  console.log('Mongoose models initialized');
+
+  return mongoose;
+}
 
 /**
  * Main function of this application.
@@ -58,21 +82,31 @@ amqp.init();
     const stopTimeHashes = performance.now();
     console.log(`${hashesChainLength} hashes have been generated in ${(stopTimeHashes - startTimeHashes)/1000} seconds.`)
 
-    await initDb();
+    try{
+      pgConnection = await initDb();
+    }catch(e){
+      console.log(e);
+      throw e;
+    }
 
-    let mongoURL = process.env.DB_CONNECTION;
-
-    // start mongoose
-    await mongoose.connect(mongoURL, {
-        useUnifiedTopology: true,
-        useNewUrlParser:    true
-    });
-
-    // init wallfair commons
-    wallfair.initModels(mongoose);
+    //start mongoose
+    try{
+      mongoDBConnection = await connectMongoDB();
+    }catch(e){
+      console.log(e);
+      throw e;
+    }
 
     // mint initial liquidity
     await wallet.transferLiquidity();
+
+    //universal user service mongo / pg
+    const usersCommonService = require('@wallfair.io/wallfair-commons/services/users');
+    usersCommonService.setParams({
+      useEngine: 'mongo',
+      mongoose: mongoDBConnection,
+      pg: pgConnection
+    });
 
     // init http server
     console.log(new Date(), "Initializing app server.")
