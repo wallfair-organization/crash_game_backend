@@ -20,8 +20,8 @@
   "author": "Wallfair.io",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
-    "@wallfair.io/trading-engine": "^0.1.48",
-    "@wallfair.io/wallfair-casino": "0.1.36",
+    "@wallfair.io/trading-engine": "^0.1.51",
+    "@wallfair.io/wallfair-casino": "0.1.44",
     "@wallfair.io/wallfair-commons": "1.8.16",
     "agenda": "^4.2.1",
     "amqplib": "^0.8.0",
