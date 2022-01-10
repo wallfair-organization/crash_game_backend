@@ -11,5 +11,10 @@ spec:
           - configMapRef:
               name: app-secrets
           - configMapRef:
-              name: crash-game-prod-values
+              name: crash-game-config
+          - configMapRef:
+              name: postgres-conn
+          - configMapRef:
+              name: redis-conn
+
 

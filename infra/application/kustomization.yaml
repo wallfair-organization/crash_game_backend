@@ -1,6 +1,5 @@
 resources:
   - crash-game-prod-deploy.yaml
-  - ingress-backend-prod.yaml
 
 configMapGenerator:
   - name: crash-game-config

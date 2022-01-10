@@ -3,12 +3,10 @@ kind: Kustomization
 resources:
 - ../../application
 
-namespace: production
+namespace: playmoney
 commonLabels:
-  environment: production
+  environment: playmoney
 
 patches:
   - prodConfigPatch.yaml
-  - replicasPatch.yaml
   - resourcesPatch.yaml
-  - ingressPatch.yaml

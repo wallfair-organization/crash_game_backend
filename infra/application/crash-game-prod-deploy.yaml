@@ -15,7 +15,7 @@ spec:
         app: crash-game
     spec:
       containers:
-        - image: registry.digitalocean.com/wallfair/crash-game-k8s
+        - image: registry.digitalocean.com/wallfair/crash-game-playmoney
           imagePullPolicy: Always
           name: crash-game
           envFrom:
