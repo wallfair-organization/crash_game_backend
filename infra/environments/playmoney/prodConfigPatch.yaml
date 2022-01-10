@@ -18,3 +18,5 @@ spec:
               name: postgres-conn
           - configMapRef:
               name: redis-conn
+          - configMapRef:
+              name: mongo-conn
