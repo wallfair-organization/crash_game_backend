@@ -229,8 +229,9 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
  */
 agenda.define("game_close", async (job) => {
     const {gameHash, crashFactor} = job.attrs.data;
+    const lostCrashFactor = 0;
     //Set proper state (3) and crash factor for all lost user trades in casino_trades table
-    const lostTrades = await casinoContract.setLostTrades(gameHash.toString(), crashFactor).catch((err) => {
+    const lostTrades = await casinoContract.setLostTrades(gameHash.toString(), lostCrashFactor).catch((err) => {
         console.error(`setLostTradesByGameHash failed ${gameHash}`, err);
     })
 
@@ -246,18 +247,18 @@ agenda.define("game_close", async (job) => {
         const user = users.find(u => u._id.toString() === trade.userid);
         const profit = getProfit(stakedAmount, 0);
 
-        const payload = {
-          crashFactor,
-          gameHash: gameHash,
-          gameName: GAME_NAME,
-          gameTypeId: GAME_ID,
-          stakedAmount,
-          profit,
-          tradeId: trade.id,
-          userId: trade.userid,
-          username: user?.username,
-          updatedAt: Date.now()
-        };
+            const payload = {
+                crashFactor: lostCrashFactor,
+                gameHash: gameHash,
+                gameName: GAME_NAME,
+                gameTypeId: GAME_ID,
+                stakedAmount,
+                profit,
+                tradeId: trade.id,
+                userId: trade.userid,
+                username: user?.username,
+                updatedAt: Date.now()
+            };
 
         amqp.send('crash_game', 'casino.lost', JSON.stringify({
           to: GAME_ID,
