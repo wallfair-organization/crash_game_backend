@@ -4,7 +4,7 @@ const agenda = new Agenda({ db: { address: process.env.DB_CONNECTION, collection
 const _ = require('lodash');
 
 const { ONE } = require('@wallfair.io/trading-engine');
-const {fromScaledBigInt} = require('../utils/number-helper');
+const {fromScaledBigInt, getProfit} = require('../utils/number-helper');
 
 const { rdsGet } = require('../utils/redis');
 
@@ -239,11 +239,13 @@ agenda.define("game_close", async (job) => {
 
     if(lostTradesArr && lostTradesArr.length) {
         const userIds = [...lostTradesArr].map(b => mongoose.Types.ObjectId(b.userid));
-        const users = await wallfair.models.User.find({_id: {$in: [...userIds]}}, {username: 1, _id: 1})
+        const users = await wallfair.models.User.find({_id: {$in: [...userIds]}}, {username: 1, ref: 1, _id: 1})
 
-        lostTradesArr.forEach((trade) => {
-            let stakedAmount = fromScaledBigInt(trade.stakedamount);
-            const user = users.find(u => u._id.toString() === trade.userid);
+
+      for (const trade of lostTradesArr) {
+        let stakedAmount = fromScaledBigInt(trade.stakedamount);
+        const user = users.find(u => u._id.toString() === trade.userid);
+        const profit = getProfit(stakedAmount, 0);
 
             const payload = {
                 crashFactor: lostCrashFactor,
@@ -251,27 +253,29 @@ agenda.define("game_close", async (job) => {
                 gameName: GAME_NAME,
                 gameTypeId: GAME_ID,
                 stakedAmount,
+                profit,
+                tradeId: trade.id,
                 userId: trade.userid,
                 username: user?.username,
                 updatedAt: Date.now()
             };
 
-            amqp.send('crash_game', 'casino.lost', JSON.stringify({
-                to: GAME_ID,
-                event: "CASINO_LOST",
-                ...payload
-            }))
+        amqp.send('crash_game', 'casino.lost', JSON.stringify({
+          to: GAME_ID,
+          event: "CASINO_LOST",
+          ...payload
+        }))
 
-            // publish message for uniEvent
-            amqp.send('universal_events', 'casino.lost', JSON.stringify({
-                event: notificationEvents.EVENT_CASINO_LOST,
-                producer: 'user',
-                producerId: payload.userId,
-                data: payload,
-                date: Date.now(),
-                broadcast: true
-            }))
-        })
+        // publish message for uniEvent
+        amqp.send('universal_events', 'casino.lost', JSON.stringify({
+          event: notificationEvents.EVENT_CASINO_LOST,
+          producer: 'user',
+          producerId: payload.userId,
+          data: payload,
+          date: Date.now(),
+          broadcast: true
+        }))
+      }
     }
 
     //Calculate proper values: amountinvestedsum, amountrewardedsum, numtrades, numcashouts and set them in casino_matches table
