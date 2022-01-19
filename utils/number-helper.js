@@ -24,8 +24,13 @@ const calculateGain = (investmentAmount, outcomeAmount, precision = 2) => {
   };
 };
 
+const getProfit = (stakedAmount, multiplier) => {
+  return (stakedAmount * parseFloat(multiplier)) - stakedAmount;
+}
+
 module.exports = {
   toScaledBigInt,
   fromScaledBigInt,
-  calculateGain
+  calculateGain,
+  getProfit
 };

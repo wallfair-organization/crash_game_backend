@@ -4,6 +4,7 @@ const { Wallet, AccountNamespace, BN }  = require('@wallfair.io/trading-engine')
 
 const CASINO_WALLET = process.env.CASINO_WALLET;
 const WFAIR_SYMBOL = 'WFAIR';
+const {GAMES_REF_PERCENT_REWARD} = require('../utils/constants');
 
 module.exports = {
     distributeRewards: async (gameHash, crashFactor) => {
