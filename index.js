@@ -15,6 +15,7 @@ const wallet = require("./services/wallet-service");
 const mongoose = require('mongoose');
 const wallfair = require('@wallfair.io/wallfair-commons');
 const { initDb } = require('@wallfair.io/trading-engine');
+// const { initDatabase } = require('@wallfair.io/wallfair-casino');
 
 const {generateListOfHashes} = require('./utils/hash_utils');
 
@@ -59,6 +60,7 @@ amqp.init();
     console.log(`${hashesChainLength} hashes have been generated in ${(stopTimeHashes - startTimeHashes)/1000} seconds.`)
 
     await initDb();
+    // await initDatabase();
 
     let mongoURL = process.env.DB_CONNECTION;
 
