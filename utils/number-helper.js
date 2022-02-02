@@ -24,13 +24,19 @@ const calculateGain = (investmentAmount, outcomeAmount, precision = 2) => {
   };
 };
 
+const roundDecimal = (amount, decimal = 2) => {
+  return +(Math.round(amount + `e+${decimal}`)  + `e-${decimal}`);
+}
+
 const getProfit = (stakedAmount, multiplier) => {
-  return (stakedAmount * parseFloat(multiplier)) - stakedAmount;
+  const parseMulti = parseFloat(multiplier);
+  return roundDecimal((stakedAmount * parseMulti) - stakedAmount);
 }
 
 module.exports = {
   toScaledBigInt,
   fromScaledBigInt,
   calculateGain,
-  getProfit
+  getProfit,
+  roundDecimal
 };

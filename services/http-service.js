@@ -77,9 +77,7 @@ server.get('/', (req, res) => {
 // Export methods to start/stop app server
 var appServer;
 module.exports = {
-    init: (_redis) => {
-        redis = _redis;
-
+    init: () => {
         // create http server and start it
         let httpServer  = http.createServer(server);
         appServer = httpServer.listen(process.env.PORT || 8001, () => {
