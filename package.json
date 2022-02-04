@@ -21,7 +21,7 @@
   "license": "AGPL-3.0-or-later",
   "dependencies": {
     "@wallfair.io/trading-engine": "^0.1.52",
-    "@wallfair.io/wallfair-casino": "0.1.56",
+    "@wallfair.io/wallfair-casino": "0.1.60",
     "@wallfair.io/wallfair-commons": "1.8.19",
     "agenda": "^4.2.1",
     "amqplib": "^0.8.0",
