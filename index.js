@@ -20,11 +20,7 @@ const { initDb } = require('@wallfair.io/trading-engine');
 const {generateListOfHashes} = require('./utils/hash_utils');
 
 // Create Redis pub client, which will be used to send out notifications
-const { createClient } = require("redis");
-const pubClient = createClient({
-    url: process.env.REDIS_CONNECTION,
-    no_ready_check: false
-});
+const redisUtil = require('./utils/redis');
 
 if(!process.env.GAME_NAME) {
     console.error('No GAME_NAME found. Please specify a unique GAME_NAME as environment variable');
@@ -78,10 +74,10 @@ amqp.init();
 
     // init http server
     console.log(new Date(), "Initializing app server.")
-    appServer.init(pubClient);
+    appServer.init();
     // init scheduling service
     console.log(new Date(), "Initializing scheduler");
-    await scheduler.init(pubClient);
+    await scheduler.init();
 
     // log to console for debugging purposes
     console.log(new Date(), "All systems ready to start crashing!");
