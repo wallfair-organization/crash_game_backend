@@ -3,10 +3,10 @@ const Agenda = require("agenda");
 const agenda = new Agenda({ db: { address: process.env.DB_CONNECTION, collection: `${process.env.GAME_NAME}_jobs` } });
 const _ = require('lodash');
 
-const { ONE } = require('@wallfair.io/trading-engine');
+const { ONE, WFAIR_SYMBOL, fromWei} = require('@wallfair.io/trading-engine');
 const {fromScaledBigInt, getProfit} = require('../utils/number-helper');
 
-const { rdsGet } = require('../utils/redis');
+const { hGetAll, redis } = require('../utils/redis');
 
 if(!process.env.GAME_ID) throw 'No GAME_ID found. Please specify GAME_ID as environment variable'
 // define constants that can be overriden in .env
@@ -22,11 +22,9 @@ const gaussian = require("@wallfair.io/wallfair-commons").utils
 
 const crashUtils = require("../utils/crash_utils");
 
-// redis publisher used to notify others of updates
-var redis;
-
 // wallet service for wallet/blockchain operations
 const wallet = require("./wallet-service");
+const userService = require("./user-service");
 // rabbitmq service
 const amqp = require('./amqp-service');
 
@@ -207,7 +205,7 @@ agenda.define("crashgame_end", {lockLifetime: 10000}, async (job) => {
     }))
 
     // extract next game bets
-    const { upcomingBets = "[]"} = await rdsGet(redis, GAME_ID);
+    const { upcomingBets = "[]"} = await hGetAll(GAME_ID);
 
     // change redis state of the game
     redis.hmset([GAME_ID,
@@ -243,22 +241,27 @@ agenda.define("game_close", async (job) => {
 
 
       for (const trade of lostTradesArr) {
-        let stakedAmount = fromScaledBigInt(trade.stakedamount);
+        let stakedAmount = fromWei(trade.stakedamount);
         const user = users.find(u => u._id.toString() === trade.userid);
         const profit = getProfit(stakedAmount, 0);
+        const gamesCurrency = trade?.gamescurrency || WFAIR_SYMBOL;
+        const convertedAmount = await userService.convertBalance(stakedAmount, gamesCurrency);
 
-            const payload = {
-                crashFactor: lostCrashFactor,
-                gameHash: gameHash,
-                gameName: GAME_NAME,
-                gameTypeId: GAME_ID,
-                stakedAmount,
-                profit,
-                tradeId: trade.id,
-                userId: trade.userid,
-                username: user?.username,
-                updatedAt: Date.now()
-            };
+        const payload = {
+          crashFactor: lostCrashFactor,
+          gameHash: gameHash,
+          gameName: GAME_NAME,
+          gameTypeId: GAME_ID,
+          stakedAmountWfair:stakedAmount,
+          stakedAmount: convertedAmount,
+          profitWfair:profit,
+          profit: getProfit(convertedAmount, gamesCurrency),
+          tradeId: trade.id,
+          userId: trade.userid,
+          username: user?.username,
+          updatedAt: Date.now(),
+          gamesCurrency
+        };
 
         amqp.send('crash_game', 'casino.lost', JSON.stringify({
           to: GAME_ID,
@@ -309,9 +312,7 @@ agenda.define("game_close", async (job) => {
 });
 
 module.exports = {
-    init: async (_redis) => {
-        redis = _redis;
-
+    init: async () => {
         // start the agenda engine
         await agenda.start();
 
